@@ -1,16 +1,5 @@
-use std::io;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::fs::File;
+mod tracker;
 
-fn main() -> io::Result<()> {
-    let f = File::open("puppy.torrent")?;
-    let mut reader = BufReader::new(f);
-    let mut buffer = String::new();
-
-    reader.read_line(&mut buffer)?;
-
-    println!("{}", buffer);
-
-    Ok(())
+fn main() {
+    let _r = tracker::read_torrent_file("big-buck-bunny.torrent");
 }
