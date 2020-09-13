@@ -1,9 +1,10 @@
+use anyhow;
 use serde_bencode::de;
 use serde_bytes::ByteBuf;
 use serde_derive::Deserialize;
 use std::fmt::Debug;
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::Read;
 
 #[derive(Debug, Deserialize)]
 struct Node(String, i64);
@@ -16,7 +17,7 @@ struct DlFile {
     md5sum: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 struct Info {
     name: String,
     pieces: ByteBuf,
@@ -37,8 +38,8 @@ struct Info {
     root_hash: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-struct Torrent {
+#[derive(Debug, Deserialize, Default)]
+pub struct Torrent {
     info: Info,
     #[serde(default)]
     announce: Option<String>,
@@ -61,7 +62,7 @@ struct Torrent {
     created_by: Option<String>,
 }
 
-fn render_torrent(torrent: &Torrent) {
+pub fn render_torrent(torrent: &Torrent) {
     println!("name:\t\t{}", torrent.info.name);
     println!("announce:\t{:?}", torrent.announce);
     println!("nodes:\t\t{:?}", torrent.nodes);
@@ -89,15 +90,11 @@ fn render_torrent(torrent: &Torrent) {
     }
 }
 
-pub fn read_torrent_file(file_path: &str) -> io::Result<()> {
+pub fn decode_file(file_path: &str) -> anyhow::Result<Torrent> {
     let mut handle = File::open(file_path)?;
     let mut buffer = Vec::new();
 
-    Ok(match handle.read_to_end(&mut buffer) {
-        Ok(_) => match de::from_bytes::<Torrent>(&buffer) {
-            Ok(t) => render_torrent(&t),
-            Err(e) => println!("ERROR: {:?}", e),
-        },
-        Err(e) => println!("ERROR: {:?}", e),
-    })
+    handle.read_to_end(&mut buffer)?;
+    let torrent = de::from_bytes::<Torrent>(&buffer)?;
+    return Ok(torrent);
 }

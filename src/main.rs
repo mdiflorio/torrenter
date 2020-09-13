@@ -1,5 +1,9 @@
-mod tracker;
+mod torrents;
 
-fn main() {
-    let _r = tracker::read_torrent_file("big-buck-bunny.torrent");
+use anyhow;
+
+fn main() -> anyhow::Result<()> {
+    let torrent = torrents::decode_file("big-buck-bunny.torrent")?;
+    torrents::render_torrent(&torrent);
+    Ok(())
 }
