@@ -42,7 +42,7 @@ struct Info {
 pub struct Torrent {
     info: Info,
     #[serde(default)]
-    announce: Option<String>,
+    pub announce: Option<String>,
     #[serde(default)]
     nodes: Option<Vec<Node>>,
     #[serde(default)]
