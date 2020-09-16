@@ -1,7 +1,7 @@
 use anyhow;
 use serde_bencode::de;
 use serde_bytes::ByteBuf;
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
@@ -9,7 +9,7 @@ use std::io::Read;
 #[derive(Debug, Deserialize)]
 struct Node(String, i64);
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct DlFile {
     path: Vec<String>,
     length: i64,
@@ -17,8 +17,8 @@ struct DlFile {
     md5sum: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Default)]
-struct Info {
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct Info {
     name: String,
     pieces: ByteBuf,
     #[serde(rename = "piece length")]
@@ -40,7 +40,7 @@ struct Info {
 
 #[derive(Debug, Deserialize, Default)]
 pub struct Torrent {
-    info: Info,
+    pub info: Info,
     #[serde(default)]
     pub announce: Option<String>,
     #[serde(default)]
