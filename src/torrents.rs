@@ -10,9 +10,9 @@ use std::io::Read;
 struct Node(String, i64);
 
 #[derive(Debug, Serialize, Deserialize)]
-struct DlFile {
+pub struct DlFile {
     path: Vec<String>,
-    length: i64,
+    pub length: i64,
     #[serde(default)]
     md5sum: Option<String>,
 }
@@ -26,9 +26,9 @@ pub struct Info {
     #[serde(default)]
     md5sum: Option<String>,
     #[serde(default)]
-    length: Option<i64>,
+    pub length: Option<i64>,
     #[serde(default)]
-    files: Option<Vec<DlFile>>,
+    pub files: Option<Vec<DlFile>>,
     #[serde(default)]
     private: Option<u8>,
     #[serde(default)]

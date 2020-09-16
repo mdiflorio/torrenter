@@ -41,8 +41,9 @@ fn main() -> anyhow::Result<()> {
         let conn_resp = utils::parse_conn_resp(&recv_buf);
         let peer_id = utils::gen_peer_id();
         let info_hash = utils::hash_torrent_info(&torrent.info);
+        let left = utils::calculate_left(&torrent.info);
         let announce_req =
-            utils::build_announce_req(info_hash, conn_resp.connection_id, peer_id, PORT);
+            utils::build_announce_req(info_hash, left, conn_resp.connection_id, peer_id, PORT);
     }
     Ok(())
 }

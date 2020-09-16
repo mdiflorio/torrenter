@@ -62,7 +62,27 @@ pub fn parse_conn_resp(buf: &[u8; 16]) -> ConnResp {
     return conn_resp;
 }
 
-pub fn build_announce_req(info_hash: String, connection_id: i64, peer_id: ByteBuffer, port: i16) {
+pub fn calculate_left(torrent_info: &torrents::Info) -> i64 {
+    let mut left: i64 = 0;
+
+    if let &Some(ref files) = &torrent_info.files {
+        for f in files {
+            left += f.length;
+        }
+    } else {
+        left += &torrent_info.length.unwrap_or_else(|| 0);
+    }
+
+    return left;
+}
+
+pub fn build_announce_req(
+    info_hash: String,
+    left: i64,
+    connection_id: i64,
+    peer_id: ByteBuffer,
+    port: i16,
+) {
     // Offset  Size    Name    Value
     // 0       64-bit integer  connection_id
     // 8       32-bit integer  action          1 // announce
@@ -94,7 +114,7 @@ pub fn build_announce_req(info_hash: String, connection_id: i64, peer_id: ByteBu
     // downloaded
     announce_req.write_i64(0);
     // left
-    announce_req.write_i64(0);
+    announce_req.write_i64(left);
     // uploaded
     announce_req.write_i64(0);
     // event
