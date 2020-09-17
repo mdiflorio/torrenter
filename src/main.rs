@@ -2,6 +2,7 @@ mod utils;
 use utils::torrents;
 
 use anyhow;
+use bytebuffer::ByteBuffer;
 use std::{net::UdpSocket, time::Duration};
 use url::Url;
 
@@ -44,6 +45,17 @@ fn main() -> anyhow::Result<()> {
         let left = utils::calculate_left(&torrent.info);
         let announce_req =
             utils::build_announce_req(info_hash, left, conn_resp.connection_id, peer_id, PORT);
+
+        socket
+            .send(&announce_req.to_bytes())
+            .expect("couldn't send message");
+
+        let mut recv_buf = Vec::new();
+
+        match socket.recv(&mut recv_buf) {
+            Ok(received) => println!("received {} bytes {:?}", received, &recv_buf[..received]),
+            Err(e) => println!("recv function failed: {:?}", e),
+        }
     }
     Ok(())
 }

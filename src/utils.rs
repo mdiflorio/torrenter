@@ -8,16 +8,27 @@ use bytebuffer::ByteBuffer;
 use core::convert::TryInto;
 use crypto::sha1::Sha1;
 use rand::Rng;
+
 pub struct ConnResp {
     action: i32,
     transaction_id: i32,
     pub connection_id: i64,
 }
 
+#[test]
+fn test_hash_torrent_info() {
+    let torrent = torrents::decode_file("big-buck-bunny.torrent")
+        .ok()
+        .unwrap();
+
+    let hashed_info = hash_torrent_info(&torrent.info);
+    assert_eq!(hashed_info, "dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c");
+}
+
 pub fn hash_torrent_info(torrent_info: &torrents::Info) -> String {
     let mut hasher = Sha1::new();
-    let bencoded_info = ser::to_string(&torrent_info).unwrap();
-    hasher.input_str(&bencoded_info);
+    let bencoded_info = ser::to_bytes(torrent_info).unwrap();
+    hasher.input(&bencoded_info);
     return hasher.result_str();
 }
 
@@ -82,7 +93,7 @@ pub fn build_announce_req(
     connection_id: i64,
     peer_id: ByteBuffer,
     port: i16,
-) {
+) -> ByteBuffer {
     // Offset  Size    Name    Value
     // 0       64-bit integer  connection_id
     // 8       32-bit integer  action          1 // announce
@@ -127,4 +138,6 @@ pub fn build_announce_req(
     announce_req.write_i32(-1);
     // port
     announce_req.write_i16(port);
+
+    return announce_req;
 }
