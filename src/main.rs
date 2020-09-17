@@ -36,7 +36,10 @@ fn main() -> anyhow::Result<()> {
         let mut recv_buf = [0; 16];
         match socket.recv(&mut recv_buf) {
             Ok(received) => println!("received {} bytes {:?}", received, &recv_buf[..4]),
-            Err(e) => println!("recv function failed: {:?}", e),
+            Err(e) => {
+                println!("recv function failed: {:?}", e);
+                panic!();
+            }
         }
 
         let conn_resp = utils::parse_conn_resp(&recv_buf);
@@ -46,12 +49,9 @@ fn main() -> anyhow::Result<()> {
         let announce_req =
             utils::build_announce_req(info_hash, left, conn_resp.connection_id, peer_id, PORT);
 
-        socket
-            .send(&announce_req.to_bytes())
-            .expect("couldn't send message");
+        socket.send(&announce_req.to_bytes())?;
 
-        let mut recv_buf = Vec::new();
-
+        let mut recv_buf = [0; 100];
         match socket.recv(&mut recv_buf) {
             Ok(received) => println!("received {} bytes {:?}", received, &recv_buf[..received]),
             Err(e) => println!("recv function failed: {:?}", e),
