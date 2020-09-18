@@ -88,8 +88,7 @@ pub fn calculate_left(torrent_info: &torrents::Info) -> i64 {
 }
 
 pub fn build_announce_req(
-    info_hash: String,
-    left: i64,
+    torrent_info: &torrents::Info,
     connection_id: i64,
     peer_id: ByteBuffer,
     port: i16,
@@ -119,12 +118,14 @@ pub fn build_announce_req(
     // transaction_id
     announce_req.write_i32(rng.gen::<i32>());
     // info`
-    announce_req.write_bytes(info_hash.as_bytes());
+    let info_hash = hash_torrent_info(&torrent_info);
+    announce_req.write_bytes(&info_hash.as_bytes());
     // peer_id
     announce_req.write_bytes(&peer_id.to_bytes());
     // downloaded
     announce_req.write_i64(0);
     // left
+    let left = calculate_left(&torrent_info);
     announce_req.write_i64(left);
     // uploaded
     announce_req.write_i64(0);
