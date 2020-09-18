@@ -4,15 +4,27 @@ pub mod torrents;
 use crypto::digest::Digest;
 use serde_bencode::ser;
 
+use anyhow;
 use bytebuffer::ByteBuffer;
 use core::convert::TryInto;
 use crypto::sha1::Sha1;
 use rand::Rng;
-
+#[derive(Debug)]
 pub struct ConnResp {
     action: i32,
     transaction_id: i32,
     pub connection_id: i64,
+}
+
+#[derive(Debug)]
+pub struct AnnounceResp {
+    action: i32,
+    transaction_id: i32,
+    interval: i32,
+    leechers: i32,
+    seeders: i32,
+    ip_addr: i32,
+    tcp_port: i16,
 }
 
 #[test]
@@ -141,4 +153,40 @@ pub fn build_announce_req(
     announce_req.write_i16(port);
 
     return announce_req;
+}
+
+// #[test]
+// fn test_parse_announce_resp() {
+//     let buf: &[u8; 100] = &[
+//         0, 0, 0, 1, 52, 21, 191, 11, 0, 0, 6, 224, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+//     ];
+
+//     let recieved: usize = 26;
+
+//     let announce_resp = parse_announce_resp(buf, recieved).unwrap();
+
+//     assert_eq!(announce_resp.action, 1);
+//     assert_eq!(announce_resp.transaction_id, 873840395);
+//     assert_eq!(announce_resp.interval, 1760);
+//     assert_eq!(announce_resp.leechers, 1);
+//     assert_eq!(announce_resp.seeders, 0);
+// }
+
+pub fn parse_announce_resp(buf: &[u8; 100], recieved: usize) -> anyhow::Result<AnnounceResp> {
+    if recieved < 20 {
+        anyhow::bail!("Error: Not able to announce to tracker");
+    } else {
+        let announce_resp = AnnounceResp {
+            action: i32::from_be_bytes(buf[..4].try_into().unwrap()),
+            transaction_id: i32::from_be_bytes(buf[4..8].try_into().unwrap()),
+            interval: i32::from_be_bytes(buf[8..12].try_into().unwrap()),
+            leechers: i32::from_be_bytes(buf[12..16].try_into().unwrap()),
+            seeders: i32::from_be_bytes(buf[16..20].try_into().unwrap()),
+            ip_addr: i32::from_be_bytes(buf[20..24].try_into().unwrap()),
+            tcp_port: i16::from_be_bytes(buf[24..26].try_into().unwrap()),
+        };
+
+        println!("{:?}", announce_resp);
+        return Ok(announce_resp);
+    }
 }

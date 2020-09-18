@@ -2,7 +2,6 @@ mod utils;
 use utils::torrents;
 
 use anyhow;
-use bytebuffer::ByteBuffer;
 use std::{net::UdpSocket, time::Duration};
 use url::Url;
 
@@ -23,7 +22,10 @@ fn main() -> anyhow::Result<()> {
     socket.set_read_timeout(Some(Duration::new(5, 0)))?;
 
     let conn_resp = connect_tracker(&socket, base_tracker_url);
+    println!("{:?}", conn_resp);
     announce_tracker(&socket, &torrent.info, conn_resp)?;
+
+    // TODO: Scrape the tracker for peers.
 
     Ok(())
 }
@@ -55,15 +57,21 @@ fn announce_tracker(
     socket: &UdpSocket,
     torrent_info: &torrents::Info,
     conn_resp: utils::ConnResp,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<utils::AnnounceResp> {
     let peer_id = utils::gen_peer_id();
     let announce_req =
         utils::build_announce_req(torrent_info, conn_resp.connection_id, peer_id, PORT);
 
-    socket.send(&announce_req.to_bytes())?;
+    socket
+        .send(&announce_req.to_bytes())
+        .expect("Couldn't send annouce req");
+
     let mut recv_buf = [0; 100];
-    Ok(match socket.recv(&mut recv_buf) {
-        Ok(received) => println!("received {} bytes {:?}", received, &recv_buf[..received]),
-        Err(e) => println!("recv function failed: {:?}", e),
-    })
+    let recieved = socket
+        .recv(&mut recv_buf)
+        .expect("Couldn't recieve announce response");
+
+    let announce_resp = utils::parse_announce_resp(&recv_buf, recieved)?;
+
+    Ok(announce_resp)
 }
