@@ -19,41 +19,51 @@ fn main() -> anyhow::Result<()> {
         tracker_url.port().unwrap()
     );
 
-    {
-        let socket = UdpSocket::bind(format!("0.0.0.0:{}", PORT)).unwrap();
-        socket.set_read_timeout(Some(Duration::new(5, 0)))?;
+    let socket = UdpSocket::bind(format!("0.0.0.0:{}", PORT)).unwrap();
+    socket.set_read_timeout(Some(Duration::new(5, 0)))?;
 
-        let conn_req = utils::build_conn_req();
+    let conn_resp = connect_tracker(&socket, base_tracker_url);
+    announce_tracker(&socket, &torrent.info, conn_resp)?;
 
-        socket
-            .connect("tracker.opentrackr.org:1337")
-            .expect("couldn't connect to address");
+    Ok(())
+}
 
-        socket
-            .send(&conn_req.to_bytes())
-            .expect("couldn't send message");
+fn connect_tracker(socket: &UdpSocket, tracker_url: String) -> utils::ConnResp {
+    let conn_req = utils::build_conn_req();
 
-        let mut recv_buf = [0; 16];
-        match socket.recv(&mut recv_buf) {
-            Ok(received) => println!("received {} bytes {:?}", received, &recv_buf[..4]),
-            Err(e) => {
-                println!("recv function failed: {:?}", e);
-                panic!();
-            }
-        }
+    socket
+        .connect(tracker_url)
+        .expect("couldn't connect to address");
 
-        let conn_resp = utils::parse_conn_resp(&recv_buf);
-        let peer_id = utils::gen_peer_id();
-        let announce_req =
-            utils::build_announce_req(&torrent.info, conn_resp.connection_id, peer_id, PORT);
+    socket
+        .send(&conn_req.to_bytes())
+        .expect("couldn't send message");
 
-        socket.send(&announce_req.to_bytes())?;
-
-        let mut recv_buf = [0; 100];
-        match socket.recv(&mut recv_buf) {
-            Ok(received) => println!("received {} bytes {:?}", received, &recv_buf[..received]),
-            Err(e) => println!("recv function failed: {:?}", e),
+    let mut recv_buf = [0; 16];
+    match socket.recv(&mut recv_buf) {
+        Ok(received) => println!("received {} bytes {:?}", received, &recv_buf[..4]),
+        Err(e) => {
+            println!("recv function failed: {:?}", e);
+            panic!();
         }
     }
-    Ok(())
+
+    return utils::parse_conn_resp(&recv_buf);
+}
+
+fn announce_tracker(
+    socket: &UdpSocket,
+    torrent_info: &torrents::Info,
+    conn_resp: utils::ConnResp,
+) -> anyhow::Result<()> {
+    let peer_id = utils::gen_peer_id();
+    let announce_req =
+        utils::build_announce_req(torrent_info, conn_resp.connection_id, peer_id, PORT);
+
+    socket.send(&announce_req.to_bytes())?;
+    let mut recv_buf = [0; 100];
+    Ok(match socket.recv(&mut recv_buf) {
+        Ok(received) => println!("received {} bytes {:?}", received, &recv_buf[..received]),
+        Err(e) => println!("recv function failed: {:?}", e),
+    })
 }
