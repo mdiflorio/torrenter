@@ -66,7 +66,7 @@ fn announce_tracker(
         .send(&announce_req.to_bytes())
         .expect("Couldn't send annouce req");
 
-    let mut recv_buf = [0; 100];
+    let mut recv_buf = [0; 1000];
     let recieved = socket
         .recv(&mut recv_buf)
         .expect("Couldn't recieve announce response");
