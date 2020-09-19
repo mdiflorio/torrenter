@@ -169,6 +169,7 @@ pub fn build_announce_req(
 // }
 
 pub fn parse_announce_resp(buf: &[u8; 1000], recieved: usize) -> anyhow::Result<AnnounceResp> {
+    // TODO: add more error checking
     if recieved < 20 {
         anyhow::bail!("Error: Not able to announce to tracker");
     } else {
@@ -191,7 +192,6 @@ pub fn parse_announce_resp(buf: &[u8; 1000], recieved: usize) -> anyhow::Result<
             offset += 4;
         }
 
-        println!("{:#?}", announce_resp);
         return Ok(announce_resp);
     }
 }
