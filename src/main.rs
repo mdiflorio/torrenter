@@ -11,7 +11,16 @@ fn main() -> anyhow::Result<()> {
     let torrent = torrents::decode_file("big-buck-bunny.torrent")?;
     torrents::render_torrent(&torrent);
 
-    let tracker_url = Url::parse(&torrent.announce.unwrap()).unwrap();
+    let mut peers: Vec<utils::SeederInfo> = Vec::new();
+    get_torrent_peers(&torrent, &mut peers);
+    println!("{:#?}", peers);
+
+    Ok(())
+}
+
+fn get_torrent_peers(torrent: &torrents::Torrent, peers: &mut Vec<utils::SeederInfo>) {
+    let announce = &torrent.announce.clone().unwrap();
+    let tracker_url = Url::parse(announce).unwrap();
     let base_tracker_url = format!(
         "{}:{}",
         tracker_url.host_str().unwrap(),
@@ -19,15 +28,19 @@ fn main() -> anyhow::Result<()> {
     );
 
     let socket = UdpSocket::bind(format!("0.0.0.0:{}", PORT)).unwrap();
-    socket.set_read_timeout(Some(Duration::new(5, 0)))?;
+    socket
+        .set_read_timeout(Some(Duration::new(1, 0)))
+        .expect("Couldn't set UDP socket read timeout");
 
     let conn_resp = connect_tracker(&socket, base_tracker_url);
-    println!("{:?}", conn_resp);
-    announce_tracker(&socket, &torrent.info, conn_resp)?;
+    let announce_resp = announce_tracker(&socket, &torrent.info, conn_resp)
+        .expect("Not able to get peers from tracker");
 
-    // TODO: Scrape the tracker for peers.
-
-    Ok(())
+    if announce_resp.seeders == 0 {
+        panic!("No peers at the moment");
+    } else {
+        peers.extend_from_slice(&announce_resp.seeder_info);
+    }
 }
 
 fn connect_tracker(socket: &UdpSocket, tracker_url: String) -> utils::ConnResp {
@@ -71,7 +84,8 @@ fn announce_tracker(
         .recv(&mut recv_buf)
         .expect("Couldn't recieve announce response");
 
-    let announce_resp = utils::parse_announce_resp(&recv_buf, recieved)?;
+    let announce_resp =
+        utils::parse_announce_resp(&recv_buf, recieved).expect("Couldn't parse the announce resp");
 
     Ok(announce_resp)
 }

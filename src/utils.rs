@@ -20,16 +20,16 @@ pub struct ConnResp {
 pub struct AnnounceResp {
     action: i32,
     transaction_id: i32,
-    interval: i32,
-    leechers: i32,
-    seeders: i32,
-    seeder_info: Vec<SeederInfo>,
+    pub interval: i32,
+    pub leechers: i32,
+    pub seeders: i32,
+    pub seeder_info: Vec<SeederInfo>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SeederInfo {
-    ip_addr: i32,
-    port: i16,
+    pub ip_addr: i32,
+    pub port: i16,
 }
 
 #[test]
@@ -191,7 +191,7 @@ pub fn parse_announce_resp(buf: &[u8; 1000], recieved: usize) -> anyhow::Result<
             offset += 4;
         }
 
-        println!("{:?}", announce_resp);
+        println!("{:#?}", announce_resp);
         return Ok(announce_resp);
     }
 }
