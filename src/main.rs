@@ -2,6 +2,8 @@ mod utils;
 use utils::torrents;
 
 use anyhow;
+use std::net::{IpAddr, Ipv4Addr, TcpStream};
+use std::{io::prelude::*, net::SocketAddr};
 use std::{net::UdpSocket, time::Duration};
 use url::Url;
 
@@ -14,6 +16,19 @@ fn main() -> anyhow::Result<()> {
     let mut peers: Vec<utils::SeederInfo> = Vec::new();
     get_torrent_peers(&torrent, &mut peers);
     println!("{:#?}", peers);
+    connect_peer(&peers[0])?;
+
+    Ok(())
+}
+
+fn connect_peer(peer: &utils::SeederInfo) -> anyhow::Result<()> {
+    let peer_addr = IpAddr::from(peer.ip_addr.to_be_bytes());
+
+    let mut stream = TcpStream::connect((peer_addr, peer.port))?;
+    stream.write(&[1]).expect("Unable to write to peer");
+    stream
+        .read(&mut [0; 128])
+        .expect("Unable to recieve from peer");
 
     Ok(())
 }
