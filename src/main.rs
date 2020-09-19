@@ -13,8 +13,7 @@ fn main() -> anyhow::Result<()> {
     let torrent = torrents::decode_file("big-buck-bunny.torrent")?;
     torrents::render_torrent(&torrent);
 
-    let mut peers: Vec<utils::SeederInfo> = Vec::new();
-    get_torrent_peers(&torrent, &mut peers);
+    let peers = get_torrent_peers(&torrent);
     println!("{:#?}", peers);
     connect_peer(&peers[0])?;
 
@@ -33,9 +32,10 @@ fn connect_peer(peer: &utils::SeederInfo) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn get_torrent_peers(torrent: &torrents::Torrent, peers: &mut Vec<utils::SeederInfo>) {
+fn get_torrent_peers(torrent: &torrents::Torrent) -> Vec<utils::SeederInfo> {
     let announce = &torrent.announce.clone().unwrap();
     let tracker_url = Url::parse(announce).unwrap();
+    let mut peers: Vec<utils::SeederInfo> = Vec::new();
     let base_tracker_url = format!(
         "{}:{}",
         tracker_url.host_str().unwrap(),
@@ -56,6 +56,7 @@ fn get_torrent_peers(torrent: &torrents::Torrent, peers: &mut Vec<utils::SeederI
     } else {
         peers.extend_from_slice(&announce_resp.seeder_info);
     }
+    return peers;
 }
 
 fn connect_tracker(socket: &UdpSocket, tracker_url: String) -> utils::ConnResp {
