@@ -38,17 +38,22 @@ fn test_hash_torrent_info() {
         .ok()
         .unwrap();
 
-    let hashed_info: &mut [u8] = &mut [0; 20];
-    hash_torrent_info(&torrent.info, hashed_info);
+    let _hashed_info = hash_torrent_info(&torrent.info);
     // assert_eq!(hashed_info, "dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c");
 }
 
-pub fn hash_torrent_info(torrent_info: &torrents::Info, hashed_info: &mut [u8]) {
+pub fn hash_torrent_info(torrent_info: &torrents::Info) -> [u8; 20] {
+    let _hashed_info: &mut [u8] = &mut [0; 20];
+
     let mut hasher = Sha1::new();
     let bencoded_info = ser::to_bytes(torrent_info).unwrap();
-    hasher.input(&bencoded_info);
 
-    hasher.result(hashed_info);
+    hasher.input(&bencoded_info);
+    hasher.result(_hashed_info);
+
+    let mut hashed_info: [u8; 20] = [0; 20];
+    hashed_info.clone_from_slice(_hashed_info);
+    return hashed_info;
 }
 
 pub fn gen_peer_id() -> ByteBuffer {
@@ -108,8 +113,9 @@ pub fn calculate_left(torrent_info: &torrents::Info) -> i64 {
 
 pub fn build_announce_req(
     torrent_info: &torrents::Info,
+    hashed_info: &[u8; 20],
     connection_id: i64,
-    peer_id: ByteBuffer,
+    peer_id: &ByteBuffer,
     port: i16,
 ) -> ByteBuffer {
     // Offset  Size    Name    Value
@@ -124,9 +130,7 @@ pub fn build_announce_req(
     // 12      32-bit integer  transaction_id
     announce_req.write_i32(rng.gen::<i32>());
     // 16      20-byte string  info_hash
-    let hashed_info: &mut [u8] = &mut [0; 20];
-    hash_torrent_info(&torrent_info, hashed_info);
-    announce_req.write_bytes(&hashed_info);
+    announce_req.write_bytes(hashed_info);
 
     // 36      20-byte string  peer_id
     announce_req.write_bytes(&peer_id.to_bytes());

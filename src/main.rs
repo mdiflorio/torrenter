@@ -2,10 +2,10 @@ mod utils;
 use utils::torrents;
 
 use anyhow;
-use std::net::{IpAddr, Ipv4Addr, TcpStream};
-use std::{io::prelude::*, net::SocketAddr};
 use std::{net::UdpSocket, time::Duration};
 use url::Url;
+use crate::utils::{hash_torrent_info, gen_peer_id};
+use bytebuffer::ByteBuffer;
 
 const PORT: i16 = 6682;
 
@@ -13,9 +13,14 @@ fn main() -> anyhow::Result<()> {
     let torrent = torrents::decode_file("big-buck-bunny.torrent")?;
     torrents::render_torrent(&torrent);
 
-    let peers = get_torrent_peers(&torrent);
-    println!("{:#?}", peers);
-    connect_peer(&peers[0])?;
+    let hashed_info = hash_torrent_info(&torrent.info);
+    let peer_id = gen_peer_id();
+    let peers = get_torrent_peers(&torrent, &hashed_info, &peer_id)?;
+
+
+    println!("{:?}", peers);
+
+    connect_tracker()
 
     Ok(())
 }
@@ -32,10 +37,14 @@ fn connect_peer(peer: &utils::SeederInfo) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn get_torrent_peers(torrent: &torrents::Torrent) -> Vec<utils::SeederInfo> {
-    let announce = &torrent.announce.clone().unwrap();
-    let tracker_url = Url::parse(announce).unwrap();
-    let mut peers: Vec<utils::SeederInfo> = Vec::new();
+
+fn get_torrent_peers(
+    torrent: &torrents::Torrent,
+    hashed_info: &[u8; 20],
+    peer_id: &ByteBuffer,
+) -> anyhow::Result<Vec<utils::SeederInfo>> {
+
+    let tracker_url = Url::parse(&torrent.announce.as_ref().unwrap()).unwrap();
     let base_tracker_url = format!(
         "{}:{}",
         tracker_url.host_str().unwrap(),
@@ -43,20 +52,18 @@ fn get_torrent_peers(torrent: &torrents::Torrent) -> Vec<utils::SeederInfo> {
     );
 
     let socket = UdpSocket::bind(format!("0.0.0.0:{}", PORT)).unwrap();
-    socket
-        .set_read_timeout(Some(Duration::new(1, 0)))
-        .expect("Couldn't set UDP socket read timeout");
+    socket.set_read_timeout(Some(Duration::new(5, 0)));
 
     let conn_resp = connect_tracker(&socket, base_tracker_url);
-    let announce_resp = announce_tracker(&socket, &torrent.info, conn_resp)
+    println!("{:?}", conn_resp);
+    let announce_resp = announce_tracker(&socket, &torrent.info,hashed_info, peer_id, conn_resp)
         .expect("Not able to get peers from tracker");
 
     if announce_resp.seeders == 0 {
-        panic!("No peers at the moment");
+        anyhow::bail!("No peers at the moment");
     } else {
-        peers.extend_from_slice(&announce_resp.seeder_info);
+        return Ok(announce_resp.seeder_info);
     }
-    return peers;
 }
 
 fn connect_tracker(socket: &UdpSocket, tracker_url: String) -> utils::ConnResp {
@@ -85,11 +92,13 @@ fn connect_tracker(socket: &UdpSocket, tracker_url: String) -> utils::ConnResp {
 fn announce_tracker(
     socket: &UdpSocket,
     torrent_info: &torrents::Info,
+    hashed_info: &[u8; 20],
+    peer_id: &ByteBuffer,
     conn_resp: utils::ConnResp,
 ) -> anyhow::Result<utils::AnnounceResp> {
     let peer_id = utils::gen_peer_id();
     let announce_req =
-        utils::build_announce_req(torrent_info, conn_resp.connection_id, peer_id, PORT);
+        utils::build_announce_req(torrent_info, hashed_info, conn_resp.connection_id, &peer_id, PORT);
 
     socket
         .send(&announce_req.to_bytes())
