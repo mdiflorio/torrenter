@@ -3,7 +3,7 @@ use utils::torrents;
 
 use anyhow;
 use std::{time::Duration};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, UdpSocket, TcpStream};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, UdpSocket, TcpStream, SocketAddr};
 use std::io::prelude::*;
 
 use url::Url;
@@ -24,9 +24,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("{:?}", peers);
 
-
-
-    connect_peer(&peers[1], &peer_handshake);
+    connect_peer(&peers[0], &peer_handshake);
 
     Ok(())
 }
@@ -34,7 +32,7 @@ fn main() -> anyhow::Result<()> {
 fn connect_peer(peer: &utils::SeederInfo, handshake: &ByteBuffer) -> anyhow::Result<()> {
     let peer_addr = IpAddr::from(peer.ip_addr.to_be_bytes());
 
-    println!("{:?}", &handshake.len());
+    println!("{:?}", peer.ip_addr.to_be_bytes());
 
     let mut stream = TcpStream::connect((peer_addr, peer.port))?;
 
@@ -65,7 +63,7 @@ fn build_peer_handshake(info_hash: &[u8; 20], peer_id: &ByteBuffer) -> ByteBuffe
     // In version 1.0 of the BitTorrent protocol, pstrlen = 19, and pstr = "BitTorrent protocol".
 
     let mut handshake: ByteBuffer = ByteBuffer::new();
-    handshake.write_i8(19);
+    handshake.write_u8(19);
     handshake.write_string("BitTorrent protocol");
     handshake.write_u64(0);
     handshake.write_bytes(info_hash);

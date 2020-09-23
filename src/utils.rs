@@ -28,7 +28,7 @@ pub struct AnnounceResp {
 
 #[derive(Debug, Clone)]
 pub struct SeederInfo {
-    pub ip_addr: i32,
+    pub ip_addr: u32,
     pub port: u16,
 }
 
@@ -189,7 +189,7 @@ pub fn parse_announce_resp(buf: &[u8; 1000], recieved: usize) -> anyhow::Result<
         let mut offset = 20;
         for _ in 0..announce_resp.seeders {
             announce_resp.seeder_info.push(SeederInfo {
-                ip_addr: i32::from_be_bytes(buf[offset..offset + 4].try_into().unwrap()),
+                ip_addr: u32::from_be_bytes(buf[offset..offset + 4].try_into().unwrap()),
                 port: u16::from_be_bytes(buf[offset + 4..offset + 6].try_into().unwrap()),
             });
 
