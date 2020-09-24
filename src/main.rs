@@ -1,14 +1,17 @@
-mod utils;
-use utils::torrents;
+use std::{time::Duration};
+use std::io::prelude::*;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpStream, UdpSocket};
 
 use anyhow;
-use std::{time::Duration};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, UdpSocket, TcpStream, SocketAddr};
-use std::io::prelude::*;
-
-use url::Url;
-use crate::utils::{hash_torrent_info, gen_peer_id};
 use bytebuffer::ByteBuffer;
+use url::Url;
+
+use utils::torrents;
+
+use crate::utils::{gen_peer_id, hash_torrent_info};
+
+mod utils;
+mod messages;
 
 const PORT: i16 = 6682;
 
@@ -19,12 +22,12 @@ fn main() -> anyhow::Result<()> {
     let hashed_info = hash_torrent_info(&torrent.info);
     let peer_id = gen_peer_id();
     let peers = get_torrent_peers(&torrent, &hashed_info, &peer_id)?;
-    let peer_handshake = build_peer_handshake(&hashed_info, &peer_id);
+    let peer_handshake = messages::build_peer_handshake(&hashed_info, &peer_id);
 
 
     println!("{:?}", peers);
 
-    connect_peer(&peers[0], &peer_handshake);
+    connect_peer(&peers[1], &peer_handshake);
 
     Ok(())
 }
@@ -34,7 +37,7 @@ fn connect_peer(peer: &utils::SeederInfo, handshake: &ByteBuffer) -> anyhow::Res
 
     println!("{:?}", peer.ip_addr.to_be_bytes());
 
-    let mut stream = TcpStream::connect((peer_addr, peer.port))?;
+    let mut stream = TcpStream::connect((peer_addr, 6881))?;
 
     stream.write(&handshake.to_bytes()).expect("Unable to write to peer");
 
@@ -48,29 +51,6 @@ fn connect_peer(peer: &utils::SeederInfo, handshake: &ByteBuffer) -> anyhow::Res
 }
 
 
-fn build_peer_handshake(info_hash: &[u8; 20], peer_id: &ByteBuffer) -> ByteBuffer {
-    // Handshake
-    // The handshake is a required message and must be the first message transmitted by the client. It is (49+len(pstr)) bytes long.
-    //
-    //     handshake: <pstrlen><pstr><reserved><info_hash><peer_id>
-    //
-    //     pstrlen: string length of <pstr>, as a single raw byte
-    //     pstr: string identifier of the protocol
-    //     reserved: eight (8) reserved bytes. All current implementations use all zeroes. Each bit in these bytes can be used to change the behavior of the protocol. An email from Bram suggests that trailing bits should be used first, so that leading bits may be used to change the meaning of trailing bits.
-    //     info_hash: 20-byte SHA1 hash of the info key in the metainfo file. This is the same info_hash that is transmitted in tracker requests.
-    //     peer_id: 20-byte string used as a unique ID for the client. This is usually the same peer_id that is transmitted in tracker requests (but not always e.g. an anonymity option in Azureus).
-
-    // In version 1.0 of the BitTorrent protocol, pstrlen = 19, and pstr = "BitTorrent protocol".
-
-    let mut handshake: ByteBuffer = ByteBuffer::new();
-    handshake.write_u8(19);
-    handshake.write_string("BitTorrent protocol");
-    handshake.write_u64(0);
-    handshake.write_bytes(info_hash);
-    handshake.write_bytes(&peer_id.to_bytes());
-
-    return handshake;
-}
 
 
 fn get_torrent_peers(
@@ -131,7 +111,6 @@ fn announce_tracker(
     peer_id: &ByteBuffer,
     conn_resp: utils::ConnResp,
 ) -> anyhow::Result<utils::AnnounceResp> {
-    let peer_id = utils::gen_peer_id();
     let announce_req =
         utils::build_announce_req(torrent_info, hashed_info, conn_resp.connection_id, &peer_id, PORT);
 
