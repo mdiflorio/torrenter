@@ -11,7 +11,7 @@ pub fn get_torrent_peers(
     torrent: &torrents::Torrent,
     hashed_info: &[u8; 20],
     peer_id: &ByteBuffer,
-) -> anyhow::Result<Vec<utils::SeederInfo>> {
+) -> anyhow::Result<Vec<utils::Peer>> {
     let tracker_url = Url::parse(&torrent.announce.as_ref().unwrap()).unwrap();
     let base_tracker_url = format!(
         "{}:{}",
@@ -30,7 +30,7 @@ pub fn get_torrent_peers(
     if announce_resp.seeders == 0 {
         anyhow::bail!("No peers at the moment");
     } else {
-        return Ok(announce_resp.seeder_info);
+        return Ok(announce_resp.peers);
     }
 }
 

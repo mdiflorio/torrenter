@@ -24,11 +24,11 @@ pub struct AnnounceResp {
     pub interval: i32,
     pub leechers: i32,
     pub seeders: i32,
-    pub seeder_info: Vec<SeederInfo>,
+    pub peers: Vec<Peer>,
 }
 
 #[derive(Debug, Clone)]
-pub struct SeederInfo {
+pub struct Peer {
     pub ip_addr: u32,
     pub port: u16,
 }
@@ -167,12 +167,12 @@ pub fn parse_announce_resp(buf: &[u8; 1000], received: usize) -> anyhow::Result<
             interval: i32::from_be_bytes(buf[8..12].try_into().unwrap()),
             leechers: i32::from_be_bytes(buf[12..16].try_into().unwrap()),
             seeders: i32::from_be_bytes(buf[16..20].try_into().unwrap()),
-            seeder_info: Vec::new(),
+            peers: Vec::new(),
         };
 
         let mut offset = 20;
         for _ in 0..announce_resp.seeders {
-            announce_resp.seeder_info.push(SeederInfo {
+            announce_resp.peers.push(Peer {
                 ip_addr: u32::from_be_bytes(buf[offset..offset + 4].try_into().unwrap()),
                 port: u16::from_be_bytes(buf[offset + 4..offset + 6].try_into().unwrap()),
             });
