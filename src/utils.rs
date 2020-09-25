@@ -1,14 +1,15 @@
-#[path = "./torrents.rs"]
-pub mod torrents;
-
-use crypto::digest::Digest;
-use serde_bencode::ser;
+use core::convert::TryInto;
 
 use anyhow;
 use bytebuffer::ByteBuffer;
-use core::convert::TryInto;
+use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use rand::Rng;
+use serde_bencode::ser;
+
+#[path = "./torrents.rs"]
+pub mod torrents;
+
 #[derive(Debug)]
 pub struct ConnResp {
     action: i32,
@@ -155,26 +156,9 @@ pub fn build_announce_req(
     return announce_req;
 }
 
-// #[test]
-// fn test_parse_announce_resp() {
-//     let buf: &[u8; 100] = &[
-//         0, 0, 0, 1, 52, 21, 191, 11, 0, 0, 6, 224, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-//     ];
 
-//     let recieved: usize = 26;
-
-//     let announce_resp = parse_announce_resp(buf, recieved).unwrap();
-
-//     assert_eq!(announce_resp.action, 1);
-//     assert_eq!(announce_resp.transaction_id, 873840395);
-//     assert_eq!(announce_resp.interval, 1760);
-//     assert_eq!(announce_resp.leechers, 1);
-//     assert_eq!(announce_resp.seeders, 0);
-// }
-
-pub fn parse_announce_resp(buf: &[u8; 1000], recieved: usize) -> anyhow::Result<AnnounceResp> {
-    // TODO: add more error checking
-    if recieved < 20 {
+pub fn parse_announce_resp(buf: &[u8; 1000], received: usize) -> anyhow::Result<AnnounceResp> {
+    if received < 20 {
         anyhow::bail!("Error: Not able to announce to tracker");
     } else {
         let mut announce_resp = AnnounceResp {
