@@ -4,8 +4,8 @@ use std::net::{IpAddr, TcpStream};
 
 use bytebuffer::ByteBuffer;
 
+use crate::{messages, utils};
 use crate::messages::build_peer_handshake;
-use crate::utils;
 use crate::utils::Peer;
 
 pub fn download(peer: &utils::Peer, handshake: &ByteBuffer) -> anyhow::Result<()> {
@@ -16,20 +16,15 @@ pub fn download(peer: &utils::Peer, handshake: &ByteBuffer) -> anyhow::Result<()
     stream.write(&handshake.to_bytes()).expect("Unable to write to peer");
 
 
-    // TODO:
-    //  - Check if it's a full message?.
-    //  - If not append to the buffer.
-    //  - If there is an error exit loop.
-    //
-
-    let msg = on_whole_msg(&mut stream);
+    let mut recv_msg = get_whole_msg(&mut stream);
+    msg_handler(&mut stream, &mut recv_msg);
 
 
     Ok(())
 }
 
 
-fn on_whole_msg(stream: &mut TcpStream) -> ByteBuffer {
+fn get_whole_msg(stream: &mut TcpStream) -> ByteBuffer {
     let mut whole_msg: ByteBuffer = ByteBuffer::new();
 
     let mut handshake = true;
@@ -69,3 +64,17 @@ fn on_whole_msg(stream: &mut TcpStream) -> ByteBuffer {
 
     return whole_msg;
 }
+
+fn msg_handler(stream: &mut TcpStream, mut recv_msg: &mut ByteBuffer) {
+    if is_handshake(&mut recv_msg) {
+        let send_msg = messages::build_interested();
+        stream.write(&send_msg.to_bytes()).expect("Unable to write to peer");
+    }
+}
+
+fn is_handshake(msg: &mut ByteBuffer) -> bool {
+    let handshake = msg.len() == (msg.read_u8() + 49) as usize && msg.to_string() == "BitTorrent protocol";
+    return handshake;
+}
+
+
