@@ -16,17 +16,56 @@ pub fn download(peer: &utils::Peer, handshake: &ByteBuffer) -> anyhow::Result<()
     stream.write(&handshake.to_bytes()).expect("Unable to write to peer");
 
 
-    let mut buf = vec![];
-    loop {
-        match stream.read_to_end(&mut buf) {
-            Ok(_) => break,
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                println!("WouldBlock error");
-            },
-            Err(e) => panic!("encountered IO error: {}", e)
-        }
-    }
-    println!("Download: {:?}", buf);
+    // TODO:
+    //  - Check if it's a full message?.
+    //  - If not append to the buffer.
+    //  - If there is an error exit loop.
+    //
+
+    let msg = on_whole_msg(&mut stream);
+
 
     Ok(())
+}
+
+
+fn on_whole_msg(stream: &mut TcpStream) -> ByteBuffer {
+    let mut whole_msg: ByteBuffer = ByteBuffer::new();
+
+    let mut handshake = true;
+
+    // Loop until we have a full message
+    loop {
+        let mut buf = vec![];
+
+        match stream.read_to_end(&mut buf) {
+            Ok(_) => {
+
+                // Get the length of the message
+                let msg_ln: usize = if handshake {
+                    (whole_msg.read_u8() + 49) as usize
+                } else {
+                    (whole_msg.read_u32() + 4) as usize
+                } as usize;
+
+                // Add te new data to the buffer
+                whole_msg.write_bytes(&buf);
+
+                // Exit loop if we have the full message
+                if whole_msg.len() <= 4 && whole_msg.len() <= msg_ln {
+                    break;
+                }
+
+                handshake = false;
+            },
+            Err(e) => {
+                println!("Peer stream read error: {}", e);
+                break;
+            }
+        }
+
+        println!("Download: {:?}", buf);
+    }
+
+    return whole_msg;
 }
