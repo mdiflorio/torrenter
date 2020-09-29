@@ -1,16 +1,74 @@
+use std::convert::TryInto;
+
 use bytebuffer::ByteBuffer;
+use rand::AsByteSliceMut;
+use serde::de::Unexpected::Bytes;
 
-pub struct RequestPayload {
+pub struct Payload {
     index: u32,
     begin: u32,
-    length: u32,
+    length: Option<u32>,
+    block: Option<ByteBuffer>,
+    payload_type: String,
 }
 
-pub struct PiecePayload {
-    index: u32,
-    begin: u32,
-    block: ByteBuffer,
+pub struct Msg {
+    size: u32,
+    id: u8,
+    payload: Payload,
 }
+
+
+pub fn parse(msg: &mut ByteBuffer) -> Msg {
+    let mut rest: ByteBuffer = ByteBuffer::new();
+    let mut index: u32 = 0;
+    let mut begin: u32 = 0;
+
+    let id = if msg.len() > 4 {
+        msg.to_bytes()[0]
+    } else { 0 };
+
+    let mut payload_bytes: ByteBuffer = ByteBuffer::new();
+
+    if msg.len() > 5 {
+        payload_bytes.write_bytes(&msg.to_bytes()[5..msg.len()]);
+    } else {
+        payload_bytes.write_u8(0);
+    };
+
+    if id == 7 || id == 8 || id == 8 {
+        rest.write_bytes(&payload_bytes.to_bytes()[8..payload_bytes.len()]);
+        index = payload_bytes.read_u32();
+        begin = payload_bytes.read_u32();
+    }
+
+    let payload = if id == 7 {
+        Payload {
+            index,
+            begin,
+            length: None,
+            block: Option::from(rest),
+            payload_type: "piece".to_string(),
+        }
+    } else {
+        Payload {
+            index,
+            begin,
+            length: Option::from(rest.read_u32()),
+            block: None,
+            payload_type: "request".to_string(),
+        }
+    };
+
+    println!("{}", index);
+
+    return Msg {
+        size: msg.read_u32(),
+        id,
+        payload,
+    }
+}
+
 
 pub fn build_peer_handshake(info_hash: &[u8; 20], peer_id: &ByteBuffer) -> ByteBuffer {
     // Handshake
@@ -128,7 +186,7 @@ pub fn build_bitfield(bitfield: &ByteBuffer) -> ByteBuffer {
 }
 
 
-pub fn build_request(payload: RequestPayload) -> ByteBuffer {
+pub fn build_request(payload: Payload) -> ByteBuffer {
     // request: <len=0013><id=6><index><begin><length>
     // The request message is fixed length, and is used to request a block. The payload contains the following information:
     //
@@ -143,13 +201,13 @@ pub fn build_request(payload: RequestPayload) -> ByteBuffer {
 
     buf.write_u32(payload.index);
     buf.write_u32(payload.begin);
-    buf.write_u32(payload.length);
+    buf.write_u32(payload.length.unwrap_or(0));
 
     return buf;
 }
 
 
-pub fn build_piece(payload: PiecePayload) -> ByteBuffer {
+pub fn build_piece(payload: &Payload) -> ByteBuffer {
 
     // piece: <len=0009+X><id=7><index><begin><block>
     //     The piece message is variable length, where X is the length of the block. The payload contains the following information:
@@ -160,18 +218,18 @@ pub fn build_piece(payload: PiecePayload) -> ByteBuffer {
 
     let mut buf: ByteBuffer = ByteBuffer::new();
 
-    buf.write_u32(9 + payload.block.len() as u32);
+    buf.write_u32(9 + payload.block.as_ref().unwrap().len() as u32);
     buf.write_u8(7);
 
     buf.write_u32(payload.index);
     buf.write_u32(payload.begin);
-    buf.write_bytes(&payload.block.to_bytes());
+    buf.write_bytes(&payload.block.as_ref().unwrap().to_bytes());
 
     return buf;
 }
 
 
-pub fn build_cancel(payload: RequestPayload) -> ByteBuffer {
+pub fn build_cancel(payload: Payload) -> ByteBuffer {
     // cancel: <len=0013><id=8><index><begin><length>
 
     // The cancel message is fixed length, and is used to cancel block requests.
@@ -189,7 +247,7 @@ pub fn build_cancel(payload: RequestPayload) -> ByteBuffer {
 
     buf.write_u32(payload.index);
     buf.write_u32(payload.begin);
-    buf.write_u32(payload.length);
+    buf.write_u32(payload.length.unwrap_or(0));
 
     return buf;
 }

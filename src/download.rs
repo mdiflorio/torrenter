@@ -65,11 +65,12 @@ fn get_whole_msg(stream: &mut TcpStream) -> ByteBuffer {
     return whole_msg;
 }
 
+
 fn msg_handler(stream: &mut TcpStream, mut recv_msg: &mut ByteBuffer) {
     if is_handshake(&mut recv_msg) {
         let send_msg = messages::build_interested();
         stream.write(&send_msg.to_bytes()).expect("Unable to write to peer");
-    }
+    } else {}
 }
 
 fn is_handshake(msg: &mut ByteBuffer) -> bool {
