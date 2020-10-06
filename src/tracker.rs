@@ -46,6 +46,7 @@ fn connect_tracker(socket: &UdpSocket, tracker_url: String) -> utils::ConnResp {
         .expect("couldn't send message");
 
     let mut recv_buf = [0; 16];
+
     socket.recv(&mut recv_buf).expect("Couldn't receive tracker message");
 
     return utils::parse_conn_resp(&recv_buf);

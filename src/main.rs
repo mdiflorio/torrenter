@@ -5,7 +5,7 @@ use utils::torrents;
 use crate::download::download;
 use crate::messages::build_peer_handshake;
 use crate::tracker::get_torrent_peers;
-use crate::utils::{gen_peer_id, hash_torrent_info};
+use crate::utils::{gen_peer_id, hash_torrent_info, Peer};
 
 mod utils;
 mod messages;
@@ -15,18 +15,23 @@ mod tracker;
 const PORT: i16 = 6682;
 
 fn main() -> anyhow::Result<()> {
-    let torrent = torrents::decode_file("big-buck-bunny.torrent")?;
+    let torrent = torrents::decode_file("Flux.torrent")?;
     torrents::render_torrent(&torrent);
 
     let hashed_info = hash_torrent_info(&torrent.info);
     let peer_id = gen_peer_id();
-    let peers = get_torrent_peers(&torrent, &hashed_info, &peer_id)?;
+    // let peers = get_torrent_peers(&torrent, &hashed_info, &peer_id)?;
     let handshake = build_peer_handshake(&hashed_info, &peer_id);
 
+    // println!("{:?}", peers);
+    // [Peer { ip_addr: 1410415827, port: 6682 }]
+    let peer = Peer {
+        ip_addr: 0,
+        port: 0,
+    };
 
-    println!("{:?}", peers);
-
-    download(&peers[1], &handshake)?;
+    // download(&peers[0], &handshake)?;
+    download(&peer, &handshake)?;
 
     Ok(())
 }
