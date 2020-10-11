@@ -4,6 +4,7 @@ use bytebuffer::ByteBuffer;
 use rand::AsByteSliceMut;
 use serde::de::Unexpected::Bytes;
 
+#[derive(Debug)]
 pub struct Payload {
     index: u32,
     begin: u32,
@@ -12,6 +13,7 @@ pub struct Payload {
     payload_type: String,
 }
 
+#[derive(Debug)]
 pub struct Msg {
     size: u32,
     id: u8,
@@ -19,14 +21,18 @@ pub struct Msg {
 }
 
 
-pub fn parse(msg: &mut ByteBuffer) -> Msg {
+pub fn get_msg_id(msg: &ByteBuffer) -> u8 {
+    if msg.len() > 4 {
+        msg.to_bytes()[0]
+    } else { 0 }
+}
+
+
+pub fn parse(id: u8, msg: &mut ByteBuffer) -> Msg {
     let mut rest: ByteBuffer = ByteBuffer::new();
     let mut index: u32 = 0;
     let mut begin: u32 = 0;
 
-    let id = if msg.len() > 4 {
-        msg.to_bytes()[0]
-    } else { 0 };
 
     let mut payload_bytes: ByteBuffer = ByteBuffer::new();
 
