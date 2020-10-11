@@ -16,23 +16,25 @@ pub struct Payload {
 #[derive(Debug)]
 pub struct Msg {
     size: u32,
-    id: u8,
-    payload: Payload,
+    pub id: u8,
+    pub payload: Option<Payload>,
 }
 
 
-pub fn get_msg_id(msg: &ByteBuffer) -> u8 {
+pub fn get_msg_id(msg: &mut ByteBuffer) -> u8 {
     if msg.len() > 4 {
-        msg.to_bytes()[0]
+        msg.to_bytes()[4]
     } else { 0 }
 }
 
 
-pub fn parse(id: u8, msg: &mut ByteBuffer) -> Msg {
+pub fn parse(msg: &mut ByteBuffer) -> Msg {
     let mut rest: ByteBuffer = ByteBuffer::new();
+    let size = msg.read_u32();
     let mut index: u32 = 0;
     let mut begin: u32 = 0;
 
+    let id = get_msg_id(msg);
 
     let mut payload_bytes: ByteBuffer = ByteBuffer::new();
 
@@ -42,34 +44,40 @@ pub fn parse(id: u8, msg: &mut ByteBuffer) -> Msg {
         payload_bytes.write_u8(0);
     };
 
-    if id == 7 || id == 8 || id == 8 {
-        rest.write_bytes(&payload_bytes.to_bytes()[8..payload_bytes.len()]);
-        index = payload_bytes.read_u32();
-        begin = payload_bytes.read_u32();
+    match id {
+        6 | 7 | 8 => {
+            rest.write_bytes(&payload_bytes.to_bytes()[8..payload_bytes.len()]);
+            index = payload_bytes.read_u32();
+            begin = payload_bytes.read_u32();
+        }
+        _ => {}
     }
 
-    let payload = if id == 7 {
-        Payload {
-            index,
-            begin,
-            length: None,
-            block: Option::from(rest),
-            payload_type: "piece".to_string(),
-        }
-    } else {
-        Payload {
-            index,
-            begin,
-            length: Option::from(rest.read_u32()),
-            block: None,
-            payload_type: "request".to_string(),
-        }
-    };
+    let mut payload: Option<Payload> = None;
 
-    println!("{}", index);
+    if id >= 5 {
+        payload = Some(if id == 7 {
+            Payload {
+                index,
+                begin,
+                length: Some(rest.len() as u32),
+                block: Some(rest),
+                payload_type: "piece".to_string(),
+            }
+        } else {
+            Payload {
+                index,
+                begin,
+                length: Some(rest.len() as u32),
+                block: None,
+                payload_type: "request".to_string(),
+            }
+        });
+    }
+
 
     return Msg {
-        size: msg.read_u32(),
+        size,
         id,
         payload,
     }

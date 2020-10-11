@@ -6,7 +6,7 @@ use std::str;
 
 use bytebuffer::ByteBuffer;
 
-use crate::{messages, utils};
+use crate::{message_handlers, messages, utils};
 use crate::messages::{build_peer_handshake, get_msg_id, parse};
 use crate::utils::Peer;
 
@@ -21,42 +21,35 @@ pub fn download(peer: &utils::Peer, handshake: &ByteBuffer) -> anyhow::Result<()
     stream.write(&handshake.to_bytes()).expect("Unable to write to peer");
 
 
+    let mut is_handshake = true;
     loop {
         let mut recv_msg = get_whole_msg(&mut stream);
-        let msg_id = get_msg_id(&recv_msg);
-        println!("Length: {:?} - ID: {:?} - Data: {:?} ", recv_msg.len(), msg_id, recv_msg);
-        msg_handler(&mut stream, &mut recv_msg);
-    }
 
+        if is_handshake {
+            message_handlers::interested(&mut stream);
+            is_handshake = false;
+        } else {
+            message_handlers::router(&mut stream, &mut recv_msg);
+        }
+    }
 
     Ok(())
 }
 
 
-fn msg_handler(stream: &mut TcpStream, mut recv_msg: &mut ByteBuffer) {
-    if is_handshake(&mut recv_msg) {
-        let send_msg = messages::build_interested();
-        stream.write(&send_msg.to_bytes()).expect("Unable to write to peer");
-    } else {
-
-        // let parsed_msg = parse(msg_id, recv_msg);
-
-        // println!("{:?}", parsed_msg);
+fn check_handshake_msg(msg: &mut ByteBuffer) -> bool {
+    if msg.len() < 20 {
+        return false;
     }
-}
 
-fn is_handshake(msg: &mut ByteBuffer) -> bool {
-    let mut protocol: String;
-
-    match String::from_utf8(msg.to_bytes()[1..20].to_owned()) {
-        Ok(pstr) => protocol = pstr,
+    let protocol = match String::from_utf8(msg.to_bytes()[1..20].to_owned()) {
+        Ok(protocol) => protocol,
         Err(e) => {
             return false;
         }
-    }
+    };
 
-    let id = get_msg_id(msg);
-    let handshake = id == 19 && protocol == "BitTorrent protocol";
+    let handshake = protocol == "BitTorrent protocol";
 
     return handshake;
 }

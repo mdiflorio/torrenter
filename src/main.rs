@@ -11,6 +11,7 @@ mod utils;
 mod messages;
 mod download;
 mod tracker;
+mod message_handlers;
 
 const PORT: i16 = 6682;
 
