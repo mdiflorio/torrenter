@@ -1,4 +1,5 @@
 use anyhow;
+use serde_bytes::ByteBuf;
 
 use utils::torrents;
 
@@ -31,8 +32,9 @@ fn main() -> anyhow::Result<()> {
         port: 0,
     };
 
-    // download(&peers[0], &handshake)?;
-    download(&peer, &handshake)?;
+    let mut requested_pieces: Vec<u32> = Vec::new();
+
+    download(&peer, &handshake, &mut requested_pieces)?;
 
     Ok(())
 }

@@ -6,7 +6,7 @@ use serde::de::Unexpected::Bytes;
 
 #[derive(Debug)]
 pub struct Payload {
-    index: u32,
+    pub(crate) index: u32,
     begin: u32,
     length: Option<u32>,
     block: Option<ByteBuffer>,
