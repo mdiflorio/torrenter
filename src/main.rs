@@ -5,6 +5,7 @@ use utils::torrents;
 
 use crate::download::download;
 use crate::messages::build_peer_handshake;
+use crate::pieces::Pieces;
 use crate::tracker::get_torrent_peers;
 use crate::utils::{gen_peer_id, hash_torrent_info, Peer};
 
@@ -13,6 +14,7 @@ mod messages;
 mod download;
 mod tracker;
 mod message_handlers;
+mod pieces;
 
 const PORT: i16 = 6682;
 
@@ -32,9 +34,9 @@ fn main() -> anyhow::Result<()> {
         port: 0,
     };
 
-    let mut requested_pieces: Vec<u32> = Vec::new();
+    let mut pieces: Pieces = Pieces::new(torrent.info.pieces.len() / 20);
 
-    download(&peer, &handshake, &mut requested_pieces)?;
+    download(&peer, &handshake, &mut pieces)?;
 
     Ok(())
 }

@@ -8,12 +8,13 @@ use bytebuffer::ByteBuffer;
 
 use crate::{message_handlers, messages, utils};
 use crate::messages::{build_peer_handshake, get_msg_id, parse};
+use crate::pieces::{Pieces, Queue};
 use crate::utils::Peer;
 
-pub fn download(peer: &utils::Peer, handshake: &ByteBuffer, requested_pieces: &mut Vec<u32>) -> anyhow::Result<()> {
+pub fn download(peer: &utils::Peer, handshake: &ByteBuffer, pieces: &mut Pieces) -> anyhow::Result<()> {
     let peer_addr = (Ipv4Addr::from(peer.ip_addr), peer.port);
 
-    let mut queue: Vec<u32> = Vec::new();
+    let mut queue: Queue = Queue::new(pieces.len);
 
     // let mut stream = TcpStream::connect(peer_addr)?;
     let mut stream = TcpStream::connect("127.0.0.1:14082").expect("Unable to connect to peer");
@@ -31,7 +32,7 @@ pub fn download(peer: &utils::Peer, handshake: &ByteBuffer, requested_pieces: &m
             message_handlers::interested(&mut stream);
             is_handshake = false;
         } else {
-            message_handlers::router(&mut stream, &mut recv_msg, requested_pieces, &mut queue);
+            message_handlers::router(&mut stream, &mut recv_msg, pieces, &mut queue);
         }
     }
 

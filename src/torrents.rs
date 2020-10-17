@@ -1,10 +1,11 @@
+use std::fmt::Debug;
+use std::fs::File;
+use std::io::Read;
+
 use anyhow;
 use serde_bencode::de;
 use serde_bytes::ByteBuf;
 use serde_derive::{Deserialize, Serialize};
-use std::fmt::Debug;
-use std::fs::File;
-use std::io::Read;
 
 #[derive(Debug, Deserialize)]
 struct Node(String, i64);
@@ -20,7 +21,7 @@ pub struct DlFile {
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Info {
     name: String,
-    pieces: ByteBuf,
+    pub(crate) pieces: ByteBuf,
     #[serde(rename = "piece length")]
     piece_length: i64,
     #[serde(default)]

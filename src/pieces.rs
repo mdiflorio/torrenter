@@ -1,5 +1,7 @@
-#[derive(Debug)]
+use std::collections::VecDeque;
+
 pub struct Pieces {
+    pub(crate) len: usize,
     requested: Vec<bool>,
     received: Vec<bool>,
 }
@@ -7,6 +9,7 @@ pub struct Pieces {
 impl Pieces {
     pub fn new(size: usize) -> Pieces {
         Pieces {
+            len: size,
             requested: vec![false; size],
             received: vec![false; size],
         }
@@ -48,5 +51,19 @@ impl Pieces {
             }
         }
         return received_every_piece;
+    }
+}
+
+pub struct Queue {
+    pub(crate) choked: bool,
+    pub(crate) pieces: VecDeque<u32>,
+}
+
+impl Queue {
+    pub fn new(size: usize) -> Queue {
+        Queue {
+            choked: true,
+            pieces: VecDeque::with_capacity(size),
+        }
     }
 }
