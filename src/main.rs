@@ -41,6 +41,23 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+// peer_id
+//
+// Torrent
+//     file
+//     hashed_info
+//     peers
+//     handshake
+//     pieces
+//
+//
+// PeerDownloader
+//     stream : TcpStream
+//     torrent: Torrent
+//     message_handler:
+//
+//     download
+
 
 
 
