@@ -7,6 +7,10 @@ use serde_bencode::de;
 use serde_bytes::ByteBuf;
 use serde_derive::{Deserialize, Serialize};
 
+use crate::utils::calculate_torrent_size;
+
+static BLOCK_LEN: i64 = 2_i64.pow(14) as i64;
+
 #[derive(Debug, Deserialize)]
 struct Node(String, i64);
 
@@ -91,6 +95,7 @@ pub fn render_torrent(torrent: &Torrent) {
     }
 }
 
+/// Take a torrent file path and convert it into a Torrent struct.
 pub fn decode_file(file_path: &str) -> anyhow::Result<Torrent> {
     let mut handle = File::open(file_path)?;
     let mut buffer = Vec::new();
@@ -99,3 +104,39 @@ pub fn decode_file(file_path: &str) -> anyhow::Result<Torrent> {
     let torrent = de::from_bytes::<Torrent>(&buffer)?;
     return Ok(torrent);
 }
+
+/// Calculate the size of a piece by looking at the piece index within the torrent file
+/// If it's not the last piece, we return the length,
+/// Otherwise it might be smaller.
+pub fn get_piece_len(torrent: &Torrent, piece_index: usize) -> i64 {
+    let total_length = calculate_torrent_size(&torrent.info);
+    let piece_length = torrent.info.piece_length;
+
+
+    let last_piece_length = total_length % piece_index as i64;
+    let last_piece_index = total_length / piece_length;
+
+    return if last_piece_index == piece_index as i64 { last_piece_length } else { piece_length };
+}
+
+
+/// Calculate the amount of blocks for each piece
+pub fn get_blocks_per_piece(torrent: &Torrent, piece_index: usize) -> i64 {
+    let piece_len = get_piece_len(torrent, piece_index);
+    return piece_len / BLOCK_LEN;
+}
+
+
+/// Get the block length which is based off of the piece index and the block index.
+/// If it's not the last piece, we return the length,
+/// Otherwise it might be smaller.
+pub fn get_block_len(torrent: &Torrent, piece_index: usize, block_index: usize) -> i64 {
+    let piece_len = get_piece_len(torrent, piece_index);
+
+    let last_piece_len = piece_len % BLOCK_LEN;
+    let last_piece_index = piece_len / BLOCK_LEN;
+
+    return if block_index == last_piece_index as usize { last_piece_len } else { BLOCK_LEN };
+}
+
+

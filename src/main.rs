@@ -1,3 +1,5 @@
+#![feature(const_int_pow)]
+
 use anyhow;
 use serde_bytes::ByteBuf;
 
