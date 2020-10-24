@@ -39,17 +39,17 @@ impl Queue<'_> {
     }
 
     /// Remove the first item from the pieces queue.
-    pub fn deque(&mut self) {
-        self.pieces.pop_front();
+    pub fn deque(&mut self) -> Option<PieceBlock> {
+        return self.pieces.pop_front();
     }
 
     /// Get the first item in pieces queue.
-    pub fn peek(self) -> PieceBlock {
+    pub fn peek(&self) -> PieceBlock {
         return self.pieces[0];
     }
 
     /// Get the length of the pieces queue.
-    pub fn len(self) -> usize {
+    pub fn len(&self) -> usize {
         return self.pieces.len();
     }
 }
