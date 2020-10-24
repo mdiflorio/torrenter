@@ -1,5 +1,11 @@
 #![feature(const_int_pow)]
 
+// TODO: Remove this once finished.
+// Don't show warnings for unused code when developping.
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
+
 use anyhow;
 use serde_bytes::ByteBuf;
 
@@ -17,6 +23,7 @@ mod download;
 mod tracker;
 mod message_handlers;
 mod pieces;
+mod queue;
 
 const PORT: i16 = 6682;
 
@@ -38,7 +45,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut pieces: Pieces = Pieces::new(torrent.info.pieces.len() / 20);
 
-    download(&peer, &handshake, &mut pieces)?;
+    download(&torrent, &peer, &handshake, &mut pieces)?;
 
     Ok(())
 }

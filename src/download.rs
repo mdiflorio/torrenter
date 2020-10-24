@@ -10,9 +10,9 @@ use crate::{message_handlers, messages, utils};
 use crate::message_handlers::MessageHandler;
 use crate::messages::{build_peer_handshake, get_msg_id, parse};
 use crate::pieces::{Pieces, Queue};
-use crate::utils::Peer;
+use crate::utils::{Peer, torrents};
 
-pub fn download(peer: &utils::Peer, handshake: &ByteBuffer, pieces: &mut Pieces) -> anyhow::Result<()> {
+pub fn download(torrent: &torrents::Torrent, peer: &utils::Peer, handshake: &ByteBuffer, pieces: &mut Pieces) -> anyhow::Result<()> {
     let peer_addr = (Ipv4Addr::from(peer.ip_addr), peer.port);
 
 

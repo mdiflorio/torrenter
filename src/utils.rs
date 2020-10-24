@@ -98,8 +98,8 @@ pub fn parse_conn_resp(buf: &[u8; 16]) -> ConnResp {
     return conn_resp;
 }
 
-pub fn calculate_torrent_size(torrent_info: &torrents::Info) -> i64 {
-    let mut left: i64 = 0;
+pub fn calculate_torrent_size(torrent_info: &torrents::Info) -> u64 {
+    let mut left: u64 = 0;
 
     if let &Some(ref files) = &torrent_info.files {
         for f in files {
@@ -139,7 +139,7 @@ pub fn build_announce_req(
     announce_req.write_i64(0);
     // 64      64-bit integer  left
     let left = calculate_torrent_size(&torrent_info);
-    announce_req.write_i64(left);
+    announce_req.write_u64(left);
     // 72      64-bit integer  uploaded
     announce_req.write_i64(0);
     // 80      32-bit integer  event           0 // 0: none; 1: completed; 2: started; 3: stopped
