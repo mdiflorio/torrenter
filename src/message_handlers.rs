@@ -5,16 +5,17 @@ use bytebuffer::ByteBuffer;
 
 use crate::messages;
 use crate::messages::{parse, Payload};
-use crate::pieces::{Pieces, Queue};
+use crate::pieces::Pieces;
+use crate::queue::Queue;
 
 pub struct MessageHandler<'a> {
     stream: &'a mut TcpStream,
     pieces: &'a mut Pieces,
-    queue: &'a mut Queue,
+    queue: &'a mut Queue<'a>,
 }
 
 impl MessageHandler<'_> {
-    pub fn new<'a>(stream: &'a mut TcpStream, pieces: &'a mut Pieces, queue: &'a mut Queue) -> MessageHandler<'a> {
+    pub fn new<'a>(stream: &'a mut TcpStream, pieces: &'a mut Pieces, queue: &'a mut Queue<'a>) -> MessageHandler<'a> {
         MessageHandler {
             stream,
             pieces,
@@ -91,12 +92,12 @@ impl MessageHandler<'_> {
 
         println!("REQUESTING PIECES");
         while self.queue.pieces.len() > 0 {
-            if let piece_index = self.queue.pieces.pop_front().unwrap() {
-                if self.pieces.needed(piece_index as usize) {
+            if let piece_block = self.queue.pieces.pop_front().unwrap() {
+                if self.pieces.needed(piece_block) {
                     // TODO - Implement build request
                     // let request = messages::build_request();
                     // stream.write(&*request.to_bytes());
-                    self.pieces.add_requested(piece_index as usize);
+                    self.pieces.add_requested(piece_block);
                     break;
                 }
             }

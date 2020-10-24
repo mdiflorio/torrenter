@@ -112,8 +112,7 @@ pub fn get_piece_len(torrent: &Torrent, piece_index: u64) -> u64 {
     let total_length = calculate_torrent_size(&torrent.info);
     let piece_length = torrent.info.piece_length;
 
-
-    let last_piece_length = total_length % piece_index as u64;
+    let last_piece_length = total_length % piece_length;
     let last_piece_index = total_length / piece_length;
 
     return if last_piece_index == piece_index { last_piece_length } else { piece_length };

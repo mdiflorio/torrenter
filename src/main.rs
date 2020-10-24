@@ -41,7 +41,7 @@ fn main() -> anyhow::Result<()> {
         port: 0,
     };
 
-    let mut pieces: Pieces = Pieces::new(torrent.info.pieces.len() / 20);
+    let mut pieces: Pieces = Pieces::new(&torrent);
 
     download(&torrent, &peer, &handshake, &mut pieces)?;
 

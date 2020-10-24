@@ -3,24 +3,24 @@ use std::collections::VecDeque;
 use crate::utils::torrents::{BLOCK_LEN, get_block_len, get_blocks_per_piece, Torrent};
 
 #[derive(Debug, Copy, Clone)]
-struct PieceBlock {
-    index: u64,
-    begin: u64,
-    length: u64,
+pub struct PieceBlock {
+    pub index: u64,
+    pub begin: u64,
+    pub length: u64,
 }
 
 /// Job queue which tracks the blocks and pieces that need to be downloaded from a given peer
 pub struct Queue<'a> {
     torrent: &'a Torrent,
-    choked: bool,
-    pieces: VecDeque<PieceBlock>,
+    pub(crate) choked: bool,
+    pub(crate) pieces: VecDeque<PieceBlock>,
 }
 
 impl Queue<'_> {
-    pub fn new(torrent: &Torrent, size: usize) -> Queue {
+    pub fn new(torrent: &Torrent) -> Queue {
         Queue {
             choked: true,
-            pieces: VecDeque::with_capacity(size),
+            pieces: VecDeque::new(),
             torrent,
         }
     }
@@ -34,6 +34,7 @@ impl Queue<'_> {
                 begin: i * BLOCK_LEN,
                 length: get_block_len(self.torrent, piece_index, i),
             };
+            self.pieces.push_back(piece_block);
         }
     }
 }

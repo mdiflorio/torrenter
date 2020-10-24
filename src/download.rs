@@ -3,16 +3,17 @@ use std::net::{Ipv4Addr, TcpStream};
 
 use bytebuffer::ByteBuffer;
 
-use crate::utils;
 use crate::message_handlers::MessageHandler;
-use crate::pieces::{Pieces, Queue};
+use crate::pieces::Pieces;
+use crate::queue::Queue;
+use crate::utils;
 use crate::utils::torrents;
 
 pub fn download(torrent: &torrents::Torrent, peer: &utils::Peer, handshake: &ByteBuffer, pieces: &mut Pieces) -> anyhow::Result<()> {
     let peer_addr = (Ipv4Addr::from(peer.ip_addr), peer.port);
 
 
-    let mut queue: Queue = Queue::new(pieces.len);
+    let mut queue: Queue = Queue::new(torrent);
     // let mut stream = TcpStream::connect(peer_addr)?;
     let mut stream = TcpStream::connect("127.0.0.1:14082").expect("Unable to connect to peer");
 
