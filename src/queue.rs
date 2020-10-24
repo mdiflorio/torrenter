@@ -37,4 +37,16 @@ impl Queue<'_> {
             self.pieces.push_back(piece_block);
         }
     }
+
+    pub fn deque(&mut self) {
+        self.pieces.pop_front();
+    }
+
+    pub fn peek(self) -> PieceBlock {
+        return self.pieces[0];
+    }
+
+    pub fn len(self) -> usize {
+        return self.pieces.len();
+    }
 }
