@@ -75,10 +75,22 @@ impl MessageHandler<'_> {
         self.request_piece();
     }
 
-    fn have(&self, payload: &Payload) {
-        let piece_index = payload.index;
+    // function haveHandler(socket, pieces, queue, payload) {
+    //     const pieceIndex = payload.readUInt32BE(0);
+    //     const queueEmpty = queue.length === 0;
+    //     queue.queue(pieceIndex);
+    //     if (queueEmpty) requestPiece(socket, pieces, queue);
+    // }
 
+    fn have(&mut self, payload: &Payload) {
         println!("HAVE");
+        let piece_index = payload.index;
+        let queue_empty = self.queue.len() == 0;
+
+        self.queue.queue(piece_index as u64);
+        if queue_empty {
+            self.request_piece()
+        }
     }
 
     fn bitfield(&self, payload: &Payload) {
