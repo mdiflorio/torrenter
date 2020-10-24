@@ -43,7 +43,7 @@ impl MessageHandler<'_> {
     pub fn get_whole_msg(&mut self) -> ByteBuffer {
         let mut whole_msg: ByteBuffer = ByteBuffer::new();
 
-        let mut buf: &mut [u8; 1028] = &mut [0; 1028];
+        let buf: &mut [u8; 1028] = &mut [0; 1028];
 
         let len = self.stream.read(buf).expect("Unable to receive from peer");
         whole_msg.write_bytes(&buf[0..len]);

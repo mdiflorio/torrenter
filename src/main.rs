@@ -7,14 +7,12 @@
 
 
 use anyhow;
-use serde_bytes::ByteBuf;
 
 use utils::torrents;
 
 use crate::download::download;
 use crate::messages::build_peer_handshake;
 use crate::pieces::Pieces;
-use crate::tracker::get_torrent_peers;
 use crate::utils::{gen_peer_id, hash_torrent_info, Peer};
 
 mod utils;
@@ -49,23 +47,6 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-// peer_id
-//
-// Torrent
-//     file
-//     hashed_info
-//     peers
-//     handshake
-//     pieces
-//
-//
-// PeerDownloader
-//     stream : TcpStream
-//     torrent: Torrent
-//     message_handler:
-//
-//     download
 
 
 

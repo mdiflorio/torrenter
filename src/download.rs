@@ -1,16 +1,12 @@
-use std::io;
-use std::io::Error;
 use std::io::prelude::*;
-use std::net::{IpAddr, Ipv4Addr, TcpStream};
-use std::str;
+use std::net::{Ipv4Addr, TcpStream};
 
 use bytebuffer::ByteBuffer;
 
-use crate::{message_handlers, messages, utils};
+use crate::utils;
 use crate::message_handlers::MessageHandler;
-use crate::messages::{build_peer_handshake, get_msg_id, parse};
 use crate::pieces::{Pieces, Queue};
-use crate::utils::{Peer, torrents};
+use crate::utils::torrents;
 
 pub fn download(torrent: &torrents::Torrent, peer: &utils::Peer, handshake: &ByteBuffer, pieces: &mut Pieces) -> anyhow::Result<()> {
     let peer_addr = (Ipv4Addr::from(peer.ip_addr), peer.port);

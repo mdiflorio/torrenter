@@ -1,6 +1,5 @@
 use std::collections::VecDeque;
 
-use crate::utils::torrents;
 use crate::utils::torrents::{BLOCK_LEN, get_block_len, get_blocks_per_piece, Torrent};
 
 #[derive(Debug, Copy, Clone)]
