@@ -1,5 +1,7 @@
 use bytebuffer::ByteBuffer;
 
+use crate::queue::PieceBlock;
+
 #[derive(Debug)]
 pub struct Payload {
     pub(crate) index: u32,
@@ -210,15 +212,15 @@ pub fn build_bitfield(bitfield: &ByteBuffer) -> ByteBuffer {
 ///   length: integer specifying the requested length.
 ///
 ///   request: <len=0013><id=6><index><begin><length>
-pub fn build_request(payload: Payload) -> ByteBuffer {
+pub fn build_request(payload: PieceBlock) -> ByteBuffer {
     let mut buf: ByteBuffer = ByteBuffer::new();
 
     buf.write_u32(13);
     buf.write_u8(6);
 
-    buf.write_u32(payload.index);
-    buf.write_u32(payload.begin);
-    buf.write_u32(payload.length.unwrap_or(0));
+    buf.write_u32(payload.index as u32);
+    buf.write_u32(payload.begin as u32);
+    buf.write_u32(payload.length as u32);
 
     return buf;
 }

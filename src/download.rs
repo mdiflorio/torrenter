@@ -31,7 +31,13 @@ pub fn download(torrent: &torrents::Torrent, peer: &utils::Peer, handshake: &Byt
             message_handler.interested();
             is_handshake = false;
         } else {
-            message_handler.router(&mut recv_msg);
+            match message_handler.router(&mut recv_msg) {
+                Ok(_) => {}
+                Err(e) => {
+                    println!("{}", e);
+                    break;
+                }
+            }
         }
     }
 

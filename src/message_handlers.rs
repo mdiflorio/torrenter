@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::net::{Shutdown, TcpStream};
 
+use anyhow::{anyhow, Result};
 use bytebuffer::ByteBuffer;
 
 use crate::messages;
@@ -23,7 +24,11 @@ impl MessageHandler<'_> {
         }
     }
 
-    pub fn router(&mut self, mut msg: &mut ByteBuffer) {
+    pub fn router(&mut self, mut msg: &mut ByteBuffer) -> Result<()> {
+        if msg.len() == 0 {
+            return Err(anyhow!("Peer connection closed"));
+        }
+
         let parsed_msg = parse(&mut msg);
 
         match parsed_msg.id {
@@ -38,6 +43,7 @@ impl MessageHandler<'_> {
         }
 
         println!("PARSED MESSAGE: {:?}", parsed_msg);
+        return Ok(());
     }
 
 
@@ -91,15 +97,15 @@ impl MessageHandler<'_> {
         }
 
         println!("REQUESTING PIECES");
-        while self.queue.pieces.len() > 0 {
-            if let piece_block = self.queue.pieces.pop_front().unwrap() {
-                if self.pieces.needed(piece_block) {
-                    // TODO - Implement build request
-                    // let request = messages::build_request();
-                    // stream.write(&*request.to_bytes());
-                    self.pieces.add_requested(piece_block);
-                    break;
-                }
+
+        while self.queue.len() > 0 {
+            let piece_block = self.queue.deque().unwrap();
+
+            if self.pieces.needed(piece_block) {
+                let request = messages::build_request(piece_block);
+                self.stream.write(&*request.to_bytes());
+                self.pieces.add_requested(piece_block);
+                break;
             }
         }
     }
