@@ -1,3 +1,4 @@
+use std::collections::hash_map::OccupiedEntry;
 use std::io::prelude::*;
 use std::net::{Shutdown, TcpStream};
 
@@ -7,17 +8,20 @@ use bytebuffer::ByteBuffer;
 use crate::messages;
 use crate::messages::{GenericPayload, parse};
 use crate::pieces::Pieces;
-use crate::queue::Queue;
+use crate::queue::{PieceBlock, Queue};
+use crate::utils::torrents::Torrent;
 
 pub struct MessageHandler<'a> {
+    torrent: &'a Torrent,
     stream: &'a mut TcpStream,
     pieces: &'a mut Pieces,
     queue: &'a mut Queue<'a>,
 }
 
 impl MessageHandler<'_> {
-    pub fn new<'a>(stream: &'a mut TcpStream, pieces: &'a mut Pieces, queue: &'a mut Queue<'a>) -> MessageHandler<'a> {
+    pub fn new<'a>(torrent: &'a Torrent, stream: &'a mut TcpStream, pieces: &'a mut Pieces, queue: &'a mut Queue<'a>) -> MessageHandler<'a> {
         MessageHandler {
+            torrent,
             stream,
             pieces,
             queue,
@@ -112,8 +116,34 @@ impl MessageHandler<'_> {
         }
     }
 
-    fn piece(&self, payload: &GenericPayload) {
+    /// Handle piece message
+    ///
+    /// - Add piece to the recieved vec
+    /// - Write to file
+    /// - Request new pieces if not finished
+    fn piece(&mut self, payload: &GenericPayload) {
         println!("PIECE");
+        let piece_block = PieceBlock {
+            index: payload.index as u64,
+            begin: payload.begin as u64,
+            length: None,
+        };
+        self.pieces.add_received(piece_block);
+
+        // Calculate the index offset on where we have to write the received piece.
+        let offset = payload.index as u64 * self.torrent.info.piece_length + payload.begin as u64;
+
+        // TODO: Write to file
+
+        // Shutdown if finished
+        if self.pieces.is_done() {
+            println!("File downloaded!");
+            self.stream.shutdown(Shutdown::Both).expect("Unable to shutdown stream");
+
+            // Otherwise, request new pieces
+        } else {
+            self.request_piece();
+        }
     }
 
 

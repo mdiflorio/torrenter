@@ -21,7 +21,7 @@ pub fn download(torrent: &torrents::Torrent, peer: &utils::Peer, handshake: &Byt
 
     stream.write(&handshake.to_bytes()).expect("Unable to write to peer");
 
-    let mut message_handler = MessageHandler::new(&mut stream, pieces, &mut queue);
+    let mut message_handler = MessageHandler::new(&torrent, &mut stream, pieces, &mut queue);
 
     let mut is_handshake = true;
     loop {

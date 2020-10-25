@@ -6,7 +6,7 @@ use crate::utils::torrents::{BLOCK_LEN, get_block_len, get_blocks_per_piece, Tor
 pub struct PieceBlock {
     pub index: u64,
     pub begin: u64,
-    pub length: u64,
+    pub length: Option<u64>,
 }
 
 /// Job queue which tracks the blocks and pieces that need to be downloaded from a given peer
@@ -32,7 +32,7 @@ impl Queue<'_> {
             let piece_block = PieceBlock {
                 index: piece_index,
                 begin: i * BLOCK_LEN,
-                length: get_block_len(self.torrent, piece_index, i),
+                length: Some(get_block_len(self.torrent, piece_index, i)),
             };
             self.pieces.push_back(piece_block);
         }

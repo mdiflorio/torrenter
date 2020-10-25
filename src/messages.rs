@@ -5,10 +5,10 @@ use crate::queue::PieceBlock;
 #[derive(Debug)]
 pub struct GenericPayload {
     pub(crate) index: u32,
-    begin: u32,
-    length: Option<u32>,
+    pub(crate) begin: u32,
+    pub(crate) length: Option<u32>,
     piece_index: Option<u32>,
-    block: Option<ByteBuffer>,
+    pub(crate) block: Option<ByteBuffer>,
     pub(crate) bitfield: Option<ByteBuffer>,
 }
 
@@ -222,7 +222,7 @@ pub fn build_request(payload: PieceBlock) -> ByteBuffer {
 
     buf.write_u32(payload.index as u32);
     buf.write_u32(payload.begin as u32);
-    buf.write_u32(payload.length as u32);
+    buf.write_u32(payload.length.unwrap() as u32);
 
     return buf;
 }

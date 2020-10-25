@@ -27,7 +27,7 @@ pub struct Info {
     name: String,
     pub(crate) pieces: ByteBuf,
     #[serde(rename = "piece length")]
-    piece_length: u64,
+    pub(crate) piece_length: u64,
     #[serde(default)]
     md5sum: Option<String>,
     #[serde(default)]
