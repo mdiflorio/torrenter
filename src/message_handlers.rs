@@ -97,7 +97,7 @@ impl MessageHandler<'_> {
         let bf = payload.bitfield.as_ref().unwrap().to_bytes();
         let queue_empty = self.queue.len() == 0;
 
-        // Iterate over all bytes and each bit in the bites
+        // Iterate over all bytes and each bit in the bytes
         for (i, b) in bf.iter().enumerate() {
             let mut byte = b.clone();
 
