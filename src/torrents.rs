@@ -24,7 +24,7 @@ pub struct DlFile {
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Info {
-    name: String,
+    pub(crate) name: String,
     pub(crate) pieces: ByteBuf,
     #[serde(rename = "piece length")]
     pub(crate) piece_length: u64,

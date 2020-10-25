@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use crate::queue::PieceBlock;
 use crate::utils::torrents::{BLOCK_LEN, get_blocks_per_piece, Torrent};
 
@@ -17,12 +15,14 @@ impl Pieces {
         }
     }
 
+    /// Flag the requested block as true
     pub fn add_requested(&mut self, piece_block: PieceBlock) {
         let block_index = piece_block.begin / BLOCK_LEN;
         self.requested[piece_block.index as usize][block_index as usize] = true;
     }
 
 
+    /// Flag the received block as true
     pub fn add_received(&mut self, piece_block: PieceBlock) {
         let block_index = piece_block.begin / BLOCK_LEN;
         self.received[piece_block.index as usize][block_index as usize] = true;

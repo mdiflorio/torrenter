@@ -6,6 +6,8 @@
 #![allow(unused_variables)]
 
 
+use std::fs::File;
+
 use anyhow;
 
 use utils::torrents;
@@ -29,6 +31,8 @@ fn main() -> anyhow::Result<()> {
     let torrent = torrents::decode_file("Flux.torrent")?;
     torrents::render_torrent(&torrent);
 
+    let mut dl_file = File::create(&torrent.info.name)?;
+
     let hashed_info = hash_torrent_info(&torrent.info);
     let peer_id = gen_peer_id();
     // let peers = get_torrent_peers(&torrent, &hashed_info, &peer_id)?;
@@ -43,7 +47,8 @@ fn main() -> anyhow::Result<()> {
 
     let mut pieces: Pieces = Pieces::new(&torrent);
 
-    download(&torrent, &peer, &handshake, &mut pieces)?;
+
+    download(&torrent, &mut dl_file, &peer, &handshake, &mut pieces)?;
 
     Ok(())
 }

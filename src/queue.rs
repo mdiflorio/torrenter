@@ -28,6 +28,7 @@ impl Queue<'_> {
     /// Add the blocks from a given piece_index into the job queue
     pub fn queue(&mut self, piece_index: u64) {
         let num_blocks = get_blocks_per_piece(self.torrent, piece_index);
+
         for i in 0..num_blocks {
             let piece_block = PieceBlock {
                 index: piece_index,
