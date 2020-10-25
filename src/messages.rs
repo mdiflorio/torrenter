@@ -3,19 +3,20 @@ use bytebuffer::ByteBuffer;
 use crate::queue::PieceBlock;
 
 #[derive(Debug)]
-pub struct Payload {
+pub struct GenericPayload {
     pub(crate) index: u32,
     begin: u32,
     length: Option<u32>,
+    piece_index: Option<u32>,
     block: Option<ByteBuffer>,
-    payload_type: String,
+    pub(crate) bitfield: Option<ByteBuffer>,
 }
 
 #[derive(Debug)]
 pub struct Msg {
     size: u32,
     pub id: u8,
-    pub payload: Option<Payload>,
+    pub payload: GenericPayload,
 }
 
 
@@ -43,7 +44,8 @@ pub fn parse(msg: &mut ByteBuffer) -> Msg {
     };
 
     match id {
-        6 | 7 | 8 => {
+        // if message request, piece or cancel
+        6 | 7 | 8 | 9 => {
             rest.write_bytes(&payload_bytes.to_bytes()[8..payload_bytes.len()]);
             index = payload_bytes.read_u32();
             begin = payload_bytes.read_u32();
@@ -51,34 +53,36 @@ pub fn parse(msg: &mut ByteBuffer) -> Msg {
         _ => {}
     }
 
-    let mut payload: Option<Payload> = None;
+    let mut payload = GenericPayload {
+        index,
+        begin,
+        length: None,
+        block: None,
+        bitfield: None,
+        piece_index: None,
+    };
 
-    if id >= 5 {
-        payload = Some(if id == 7 {
-            Payload {
-                index,
-                begin,
-                length: Some(rest.len() as u32),
-                block: Some(rest),
-                payload_type: "piece".to_string(),
-            }
-        } else {
-            Payload {
-                index,
-                begin,
-                length: Some(rest.len() as u32),
-                block: None,
-                payload_type: "request".to_string(),
-            }
-        });
-    }
+    // Fill payload with different data depending on the message type.
+    match id {
+        // Choke, unchoke, interested, uninterested.
+        0 | 1 | 2 | 3 => payload.length = Some(rest.len() as u32),
+        // Have
+        4 => payload.piece_index = Some(rest.read_u32()),
+        // Bitfield
+        5 => payload.bitfield = Some(payload_bytes),
+        // Request, cancel
+        6 | 8 => payload.length = Some(rest.read_u32()),
+        // Piece
+        7 => payload.block = Some(rest),
+        _ => {}
+    };
 
 
     return Msg {
         size,
         id,
         payload,
-    }
+    };
 }
 
 /// The handshake is a required message and must be the first message transmitted by the client.
@@ -101,7 +105,6 @@ pub fn parse(msg: &mut ByteBuffer) -> Msg {
 ///
 ///    In version 1.0 of the BitTorrent protocol, pstrlen = 19, and pstr = "BitTorrent protocol".
 pub fn build_peer_handshake(info_hash: &[u8; 20], peer_id: &ByteBuffer) -> ByteBuffer {
-
     let mut handshake: ByteBuffer = ByteBuffer::new();
     handshake.write_u8(19);
     handshake.write_bytes("BitTorrent protocol".as_bytes());
@@ -193,7 +196,6 @@ pub fn build_have(piece_index: u32) -> ByteBuffer {
 ///
 /// bitfield: <len=0001+X><id=5><bitfield>
 pub fn build_bitfield(bitfield: &ByteBuffer) -> ByteBuffer {
-
     let mut buf: ByteBuffer = ByteBuffer::new();
 
     buf.write_u32((bitfield.len() + 1) as u32);
@@ -233,8 +235,7 @@ pub fn build_request(payload: PieceBlock) -> ByteBuffer {
 ///     block: block of data, which is a subset of the piece specified by index.
 ///
 ///     piece: <len=0009+X><id=7><index><begin><block>
-pub fn build_piece(payload: &Payload) -> ByteBuffer {
-
+pub fn build_piece(payload: &GenericPayload) -> ByteBuffer {
     let mut buf: ByteBuffer = ByteBuffer::new();
 
     buf.write_u32(9 + payload.block.as_ref().unwrap().len() as u32);
@@ -258,8 +259,7 @@ pub fn build_piece(payload: &Payload) -> ByteBuffer {
 ///
 ///  cancel: <len=0013><id=8><index><begin><length>
 ///
-pub fn build_cancel(payload: Payload) -> ByteBuffer {
-
+pub fn build_cancel(payload: GenericPayload) -> ByteBuffer {
     let mut buf: ByteBuffer = ByteBuffer::new();
 
     buf.write_u32(13);

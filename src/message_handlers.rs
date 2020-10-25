@@ -5,7 +5,7 @@ use anyhow::{anyhow, Result};
 use bytebuffer::ByteBuffer;
 
 use crate::messages;
-use crate::messages::{parse, Payload};
+use crate::messages::{GenericPayload, parse};
 use crate::pieces::Pieces;
 use crate::queue::Queue;
 
@@ -34,9 +34,9 @@ impl MessageHandler<'_> {
         match parsed_msg.id {
             0 => self.choke(),
             1 => self.unchoke(),
-            4 => self.have(&parsed_msg.payload.as_ref().unwrap()),
-            5 => self.bitfield(&parsed_msg.payload.as_ref().unwrap()),
-            7 => self.piece(&parsed_msg.payload.as_ref().unwrap()),
+            4 => self.have(&parsed_msg.payload),
+            5 => self.bitfield(&parsed_msg.payload),
+            7 => self.piece(&parsed_msg.payload),
             _ => {
                 println!("Unknown message ID: {:?}", parsed_msg.id);
             }
@@ -66,7 +66,7 @@ impl MessageHandler<'_> {
 
     fn choke(&mut self) {
         println!("CHOKED");
-        self.stream.shutdown(Shutdown::Both);
+        self.stream.shutdown(Shutdown::Both).expect("The peer has choked us");
     }
 
     fn unchoke(&mut self) {
@@ -76,7 +76,7 @@ impl MessageHandler<'_> {
     }
 
 
-    fn have(&mut self, payload: &Payload) {
+    fn have(&mut self, payload: &GenericPayload) {
         println!("HAVE");
         let piece_index = payload.index;
         let queue_empty = self.queue.len() == 0;
@@ -87,11 +87,32 @@ impl MessageHandler<'_> {
         }
     }
 
-    fn bitfield(&self, payload: &Payload) {
+    /// Handle bitfield messages which indicate which are the pieces that the peer has.
+    ///
+    /// For example, the a bitfield of 01111 indicates that the peer is missing the first piece but has all the others.
+    ///
+    fn bitfield(&mut self, payload: &GenericPayload) {
         println!("BITFIELD");
+
+        let bf = payload.bitfield.as_ref().unwrap().to_bytes();
+        let queue_empty = self.queue.len() == 0;
+
+        // Iterate over all bytes and each bit in the bites
+        for (i, b) in bf.iter().enumerate() {
+            let mut byte = b.clone();
+
+
+            for j in 0..8 {
+                // Add the pieces to the job queue.
+                if byte % 2 > 0 {
+                    self.queue.queue((i * 8 + 7 - j) as u64)
+                }
+                byte = byte / 2;
+            }
+        }
     }
 
-    fn piece(&self, payload: &Payload) {
+    fn piece(&self, payload: &GenericPayload) {
         println!("PIECE");
     }
 
@@ -109,6 +130,7 @@ impl MessageHandler<'_> {
 
             if self.pieces.needed(piece_block) {
                 let request = messages::build_request(piece_block);
+
                 self.stream.write(&*request.to_bytes());
                 self.pieces.add_requested(piece_block);
                 break;
