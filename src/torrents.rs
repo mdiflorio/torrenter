@@ -65,7 +65,7 @@ pub struct Torrent {
     #[serde(default)]
     #[serde(rename = "created by")]
     created_by: Option<String>,
-    size: Option<u64>,
+    pub(crate) size: Option<u64>,
     pub(crate) info_hash: Option<[u8; 20]>
 }
 

@@ -79,8 +79,7 @@ pub fn parse_conn_resp(buf: &[u8; 16]) -> ConnResp {
 
 
 pub fn build_announce_req(
-    torrent_info: &torrents::Info,
-    hashed_info: &[u8; 20],
+    torrent: &torrents::Torrent,
     connection_id: i64,
     peer_id: &ByteBuffer,
     port: i16,
@@ -97,15 +96,14 @@ pub fn build_announce_req(
     // 12      32-bit integer  transaction_id
     announce_req.write_i32(rng.gen::<i32>());
     // 16      20-byte string  info_hash
-    announce_req.write_bytes(hashed_info);
+    announce_req.write_bytes(&*torrent.info_hash.as_ref().unwrap());
 
     // 36      20-byte string  peer_id
     announce_req.write_bytes(&peer_id.to_bytes());
     // 56      64-bit integer  downloaded
     announce_req.write_i64(0);
     // 64      64-bit integer  left
-    let left = calculate_torrent_size(&torrent_info);
-    announce_req.write_u64(left);
+    announce_req.write_u64(torrent.size.unwrap());
     // 72      64-bit integer  uploaded
     announce_req.write_i64(0);
     // 80      32-bit integer  event           0 // 0: none; 1: completed; 2: started; 3: stopped

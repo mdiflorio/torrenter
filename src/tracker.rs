@@ -6,10 +6,10 @@ use url::Url;
 
 use crate::{PORT, utils};
 use crate::utils::torrents;
+use crate::utils::torrents::Torrent;
 
 pub fn get_torrent_peers(
     torrent: &torrents::Torrent,
-    hashed_info: &[u8; 20],
     peer_id: &ByteBuffer,
 ) -> anyhow::Result<Vec<utils::Peer>> {
     let tracker_url = Url::parse(&torrent.announce.as_ref().unwrap()).unwrap();
@@ -24,7 +24,7 @@ pub fn get_torrent_peers(
 
     let conn_resp = connect_tracker(&socket, base_tracker_url);
 
-    let announce_resp = announce_tracker(&socket, &torrent.info, hashed_info, peer_id, conn_resp)
+    let announce_resp = announce_tracker(&socket, &torrent, peer_id, conn_resp)
         .expect("Not able to get peers from tracker");
 
     if announce_resp.seeders == 0 {
@@ -54,13 +54,12 @@ fn connect_tracker(socket: &UdpSocket, tracker_url: String) -> utils::ConnResp {
 
 fn announce_tracker(
     socket: &UdpSocket,
-    torrent_info: &torrents::Info,
-    hashed_info: &[u8; 20],
+    torrent: &Torrent,
     peer_id: &ByteBuffer,
     conn_resp: utils::ConnResp,
 ) -> anyhow::Result<utils::AnnounceResp> {
     let announce_req =
-        utils::build_announce_req(torrent_info, hashed_info, conn_resp.connection_id, &peer_id, PORT);
+        utils::build_announce_req(torrent, conn_resp.connection_id, &peer_id, PORT);
 
     socket
         .send(&announce_req.to_bytes())

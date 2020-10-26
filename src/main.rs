@@ -29,12 +29,13 @@ mod queue;
 const PORT: i16 = 6682;
 
 fn main() -> anyhow::Result<()> {
+    let peer_id = gen_peer_id();
+
     let torrent = Torrent::new("Flux.torrent");
     torrent.print_info();
 
     let mut dl_file = File::create(&torrent.info.name)?;
 
-    let peer_id = gen_peer_id();
     // let peers = get_torrent_peers(&torrent, &hashed_info, &peer_id)?;
     let handshake = build_peer_handshake(&torrent.info_hash.unwrap(), &peer_id);
 
