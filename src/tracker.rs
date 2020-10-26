@@ -4,7 +4,7 @@ use std::time::Duration;
 use bytebuffer::ByteBuffer;
 use url::Url;
 
-use crate::{PORT, utils};
+use crate::{messages, PORT, utils};
 use crate::utils::torrents;
 use crate::utils::torrents::Torrent;
 
@@ -35,7 +35,7 @@ pub fn get_torrent_peers(
 }
 
 fn connect_tracker(socket: &UdpSocket, tracker_url: String) -> utils::ConnResp {
-    let conn_req = utils::build_conn_req();
+    let conn_req = messages::build_conn_req();
 
     socket
         .connect(tracker_url)
@@ -59,7 +59,7 @@ fn announce_tracker(
     conn_resp: utils::ConnResp,
 ) -> anyhow::Result<utils::AnnounceResp> {
     let announce_req =
-        utils::build_announce_req(torrent, conn_resp.connection_id, &peer_id, PORT);
+        messages::build_announce_req(torrent, conn_resp.connection_id, &peer_id, PORT);
 
     socket
         .send(&announce_req.to_bytes())

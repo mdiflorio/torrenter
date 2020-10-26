@@ -1,6 +1,8 @@
 use bytebuffer::ByteBuffer;
+use rand::Rng;
 
 use crate::queue::PieceBlock;
+use crate::utils::torrents;
 
 #[derive(Debug)]
 pub struct GenericPayload {
@@ -289,4 +291,66 @@ pub fn build_port(port: u16) -> ByteBuffer {
     buf.write_u16(port);
 
     return buf;
+}
+
+
+pub fn build_conn_req() -> ByteBuffer {
+    let mut rng = rand::thread_rng();
+    let mut buffer = ByteBuffer::new();
+
+    // 0       64-bit integer  protocol_id     0x41727101980 // magic constant
+    // 8       32-bit integer  action          0 // connect
+    // 12      32-bit integer  transaction_id
+
+    let protocol_id: i64 = 0x41727101980;
+    let action: i32 = 0;
+    let transaction_id: i32 = rng.gen::<i32>();
+
+    buffer.write_i64(protocol_id);
+    buffer.write_i32(action);
+    buffer.write_i32(transaction_id);
+
+    return buffer;
+}
+
+pub fn build_announce_req(
+    torrent: &torrents::Torrent,
+    connection_id: i64,
+    peer_id: &ByteBuffer,
+    port: i16,
+) -> ByteBuffer {
+    // Offset  Size    Name    Value
+
+    let mut announce_req = ByteBuffer::new();
+    let mut rng = rand::thread_rng();
+
+    // 0       64-bit integer  connection_id
+    announce_req.write_i64(connection_id);
+    // 8       32-bit integer  action          1 // announce
+    announce_req.write_i32(1);
+    // 12      32-bit integer  transaction_id
+    announce_req.write_i32(rng.gen::<i32>());
+    // 16      20-byte string  info_hash
+    announce_req.write_bytes(&*torrent.info_hash.as_ref().unwrap());
+
+    // 36      20-byte string  peer_id
+    announce_req.write_bytes(&peer_id.to_bytes());
+    // 56      64-bit integer  downloaded
+    announce_req.write_i64(0);
+    // 64      64-bit integer  left
+    announce_req.write_u64(torrent.size.unwrap());
+    // 72      64-bit integer  uploaded
+    announce_req.write_i64(0);
+    // 80      32-bit integer  event           0 // 0: none; 1: completed; 2: started; 3: stopped
+    announce_req.write_i32(0);
+    // 84      32-bit integer  IP address      0 // default
+    announce_req.write_i32(0);
+    // 88      32-bit integer  key
+    announce_req.write_i32(0);
+    // 92      32-bit integer  num_want        -1 // default
+    announce_req.write_i32(-1);
+    // 96      16-bit integer  port
+    announce_req.write_i16(port);
+
+    return announce_req;
 }
