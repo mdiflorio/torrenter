@@ -7,6 +7,8 @@ use crypto::sha1::Sha1;
 use rand::Rng;
 use serde_bencode::ser;
 
+use crate::utils::torrents::calculate_torrent_size;
+
 #[path = "./torrents.rs"]
 pub mod torrents;
 
@@ -33,29 +35,6 @@ pub struct Peer {
     pub port: u16,
 }
 
-#[test]
-fn test_hash_torrent_info() {
-    let torrent = torrents::decode_file("big-buck-bunny.torrent")
-        .ok()
-        .unwrap();
-
-    let _hashed_info = hash_torrent_info(&torrent.info);
-    // assert_eq!(hashed_info, "dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c");
-}
-
-pub fn hash_torrent_info(torrent_info: &torrents::Info) -> [u8; 20] {
-    let _hashed_info: &mut [u8] = &mut [0; 20];
-
-    let mut hasher = Sha1::new();
-    let bencoded_info = ser::to_bytes(torrent_info).unwrap();
-
-    hasher.input(&bencoded_info);
-    hasher.result(_hashed_info);
-
-    let mut hashed_info: [u8; 20] = [0; 20];
-    hashed_info.clone_from_slice(_hashed_info);
-    return hashed_info;
-}
 
 pub fn gen_peer_id() -> ByteBuffer {
     let mut peer_id = ByteBuffer::new();
@@ -98,19 +77,6 @@ pub fn parse_conn_resp(buf: &[u8; 16]) -> ConnResp {
     return conn_resp;
 }
 
-pub fn calculate_torrent_size(torrent_info: &torrents::Info) -> u64 {
-    let mut left: u64 = 0;
-
-    if let &Some(ref files) = &torrent_info.files {
-        for f in files {
-            left += f.length;
-        }
-    } else {
-        left += &torrent_info.length.unwrap_or_else(|| 0);
-    }
-
-    return left;
-}
 
 pub fn build_announce_req(
     torrent_info: &torrents::Info,

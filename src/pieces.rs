@@ -1,5 +1,5 @@
 use crate::queue::PieceBlock;
-use crate::utils::torrents::{BLOCK_LEN, get_blocks_per_piece, Torrent};
+use crate::utils::torrents::{BLOCK_LEN, Torrent};
 
 #[derive(Debug, Clone)]
 pub struct Pieces {
@@ -90,7 +90,7 @@ fn build_pieces_vec(torrent: &Torrent) -> Vec<Vec<bool>> {
 
     // For each piece, fill it with a vec which is the length of blocks for that piece
     for i in 0..num_pieces {
-        let blocks_per_piece = get_blocks_per_piece(torrent, i as u64);
+        let blocks_per_piece = torrent.get_blocks_per_piece(i as u64);
         vec[i] = vec![false; blocks_per_piece as usize];
     }
 

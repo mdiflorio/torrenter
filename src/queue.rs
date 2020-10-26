@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::utils::torrents::{BLOCK_LEN, get_block_len, get_blocks_per_piece, Torrent};
+use crate::utils::torrents::{BLOCK_LEN, Torrent};
 
 #[derive(Debug, Copy, Clone)]
 pub struct PieceBlock {
@@ -27,13 +27,13 @@ impl Queue<'_> {
 
     /// Add the blocks from a given piece_index into the job queue
     pub fn queue(&mut self, piece_index: u64) {
-        let num_blocks = get_blocks_per_piece(self.torrent, piece_index);
+        let num_blocks = self.torrent.get_blocks_per_piece(piece_index);
 
         for i in 0..num_blocks {
             let piece_block = PieceBlock {
                 index: piece_index,
                 begin: i * BLOCK_LEN,
-                length: Some(get_block_len(self.torrent, piece_index, i)),
+                length: Some(self.torrent.get_block_len(piece_index, i)),
             };
             self.pieces.push_back(piece_block);
         }
