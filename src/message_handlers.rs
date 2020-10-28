@@ -163,6 +163,7 @@ impl MessageHandler<'_> {
         let offset = payload.index as u64 * self.torrent.info.piece_length + payload.begin as u64;
 
         // Write to file
+        // TODO: Verify the hash of the piece before writing it
         self.file.seek(SeekFrom::Start(offset)).expect("Unable to set offset on file");
         self.file.write(&*payload.block.as_ref().unwrap().to_bytes()).expect("Unable to write to file");
 
