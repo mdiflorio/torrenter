@@ -11,10 +11,10 @@ use serde_derive::{Deserialize, Serialize};
 
 pub static BLOCK_LEN: u64 = 2_u64.pow(14) as u64;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Node(String, i64);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DlFile {
     path: Vec<String>,
     pub length: u64,
@@ -22,7 +22,7 @@ pub struct DlFile {
     md5sum: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Info {
     pub(crate) name: String,
     pub(crate) pieces: ByteBuf,
@@ -43,7 +43,7 @@ pub struct Info {
     root_hash: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct Torrent {
     pub info: Info,
     #[serde(default)]

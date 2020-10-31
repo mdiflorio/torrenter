@@ -29,13 +29,13 @@ pub fn get_msg_id(msg: &mut ByteBuffer) -> u8 {
 }
 
 
-pub fn parse(msg: &mut ByteBuffer) -> Msg {
+pub fn parse(mut msg: ByteBuffer) -> Msg {
     let mut rest: ByteBuffer = ByteBuffer::new();
     let size = msg.read_u32();
     let mut index: u32 = 0;
     let mut begin: u32 = 0;
 
-    let id = get_msg_id(msg);
+    let id = get_msg_id(&mut msg);
 
     let mut payload_bytes: ByteBuffer = ByteBuffer::new();
 

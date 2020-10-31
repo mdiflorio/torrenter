@@ -6,27 +6,33 @@ use std::net::{Shutdown, TcpStream};
 
 use anyhow::{anyhow, Result};
 use bytebuffer::ByteBuffer;
+use tokio::sync::mpsc::Sender;
 
-use crate::messages;
+use crate::{messages, PiecesManager};
 use crate::messages::{GenericPayload, parse};
 use crate::pieces::Pieces;
 use crate::queue::{PieceBlock, Queue};
 use crate::utils::torrents::Torrent;
 
+pub struct PieceChannelPayload {
+    pub offset: u64,
+    pub block: Vec<u8>
+}
+
 pub struct MessageHandler<'a> {
     torrent: &'a Torrent,
     stream: &'a mut TcpStream,
-    file: &'a mut File,
-    pieces: &'a mut Pieces,
+    file_sender: Sender<PieceChannelPayload>,
+    pieces: PiecesManager,
     queue: &'a mut Queue<'a>,
 }
 
 impl MessageHandler<'_> {
-    pub fn new<'a>(torrent: &'a Torrent, stream: &'a mut TcpStream, file: &'a mut File, pieces: &'a mut Pieces, queue: &'a mut Queue<'a>) -> MessageHandler<'a> {
+    pub fn new<'a>(torrent: &'a Torrent, stream: &'a mut TcpStream, file_sender: Sender<PieceChannelPayload>, pieces: PiecesManager, queue: &'a mut Queue<'a>) -> MessageHandler<'a> {
         MessageHandler {
             torrent,
             stream,
-            file,
+            file_sender,
             pieces,
             queue,
         }
@@ -41,19 +47,22 @@ impl MessageHandler<'_> {
     ///     5 : bitfield
     ///     7 : piece
     ///
-    pub fn router(&mut self, mut msg: &mut ByteBuffer) -> Result<()> {
+    pub async fn router(&mut self, msg: ByteBuffer) -> Result<()> {
         if msg.len() == 0 {
             return Err(anyhow!("Peer connection closed"));
         }
 
-        let parsed_msg = parse(&mut msg);
+        let parsed_msg = parse(msg);
+
 
         match parsed_msg.id {
             0 => self.choke(),
             1 => self.unchoke(),
-            4 => self.have(&parsed_msg.payload),
-            5 => self.bitfield(&parsed_msg.payload),
-            7 => self.piece(&parsed_msg.payload),
+            4 => self.have(parsed_msg.payload),
+            5 => self.bitfield(parsed_msg.payload),
+            7 => {
+                self.piece(parsed_msg.payload).await;
+            },
             _ => {
                 println!("Unknown message ID: {:?}", parsed_msg.id);
             }
@@ -71,7 +80,7 @@ impl MessageHandler<'_> {
         let mut whole_msg: ByteBuffer = ByteBuffer::new();
 
         // Get the length from the first message.
-        let buf: &mut [u8; 1028 * 16] = &mut [0; 1028 * 16];
+        let buf: &mut [u8; 1028 * 36] = &mut [0; 1028 * 36];
         let len = self.stream.read(buf).expect("Unable to receive from peer");
         whole_msg.write_bytes(&buf[0..len]);
 
@@ -108,7 +117,7 @@ impl MessageHandler<'_> {
 
 
     /// A peer has indicted that they have a certain piece.
-    fn have(&mut self, payload: &GenericPayload) {
+    fn have(&mut self, payload: GenericPayload) {
         println!("HAVE");
         let piece_index = payload.index;
         let queue_empty = self.queue.len() == 0;
@@ -123,7 +132,7 @@ impl MessageHandler<'_> {
     ///
     /// For example, the a bitfield of 01111 indicates that the peer is missing the first piece but has all the others.
     ///
-    fn bitfield(&mut self, payload: &GenericPayload) {
+    fn bitfield(&mut self, payload: GenericPayload) {
         println!("BITFIELD");
 
         let bf = payload.bitfield.as_ref().unwrap().to_bytes();
@@ -150,25 +159,43 @@ impl MessageHandler<'_> {
     /// - Add piece to the recieved vec
     /// - Write to file
     /// - Request new pieces if not finished
-    fn piece(&mut self, payload: &GenericPayload) {
+    async fn piece(&mut self, payload: GenericPayload) {
         println!("PIECE");
+
         let piece_block = PieceBlock {
             index: payload.index as u64,
             begin: payload.begin as u64,
             length: None,
         };
-        self.pieces.add_received(piece_block);
+
 
         // Calculate the index offset on where we have to write the received piece.
         let offset = payload.index as u64 * self.torrent.info.piece_length + payload.begin as u64;
 
-        // Write to file
-        // TODO: Verify the hash of the piece before writing it
-        self.file.seek(SeekFrom::Start(offset)).expect("Unable to set offset on file");
-        self.file.write(&*payload.block.as_ref().unwrap().to_bytes()).expect("Unable to write to file");
+        let payload = PieceChannelPayload {
+            offset,
+            block: payload.block.unwrap().to_bytes(),
+        };
+
+        let mut download_finished: bool;
+
+        {
+            let mut pieces = self.pieces.lock().unwrap();
+            pieces.add_received(piece_block.clone());
+        }
+
+        {
+            // Send message to the channel
+            self.file_sender.send(payload).await;
+        };
+
+        {
+            let mut pieces = self.pieces.lock().unwrap();
+            download_finished = pieces.is_done();
+        }
 
         // Shutdown if finished
-        if self.pieces.is_done() {
+        if download_finished {
             println!("File downloaded!");
             self.stream.shutdown(Shutdown::Both).expect("Unable to shutdown stream");
 
@@ -189,7 +216,7 @@ impl MessageHandler<'_> {
             return;
         }
 
-        println!("REQUESTING PIECES");
+        let mut pieces = self.pieces.lock().unwrap();
 
         while self.queue.len() > 0 {
 
@@ -198,10 +225,10 @@ impl MessageHandler<'_> {
             println!("Requesting: {}", piece_block.index);
 
             // Check if that piece is still needed and request if so
-            if self.pieces.needed(piece_block) {
+            if pieces.needed(piece_block) {
                 let request = messages::build_request(piece_block);
                 self.stream.write(&*request.to_bytes());
-                self.pieces.add_requested(piece_block);
+                pieces.add_requested(piece_block);
 
                 break;
             }
