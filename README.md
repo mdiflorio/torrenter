@@ -12,7 +12,7 @@ or simply Rust code I'd love to hear from you.
 
 ## Things that need to be done
 
-- [ ] Get downloads working with multiple peers and concurrency.
+- [x] Get downloads working with multiple peers and concurrency.
 - [ ] Reorganise the code for a more OOP approach.
 - [ ] Add tests
 - [ ] Check the hash of each piece before writing to the file.
