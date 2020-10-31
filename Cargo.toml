@@ -16,3 +16,4 @@ url = "1.5.1"
 bytebuffer = "0.2.1"
 rand = "0.7.3"
 rust-crypto = "0.2.36"
+tokio = { version = "0.3", features = ["full"] }
