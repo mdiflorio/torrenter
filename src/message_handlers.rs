@@ -8,7 +8,8 @@ use anyhow::{anyhow, Result};
 use bytebuffer::ByteBuffer;
 use tokio::sync::mpsc::Sender;
 
-use crate::{messages, PiecesManager};
+use crate::messages;
+use crate::download::PiecesManager;
 use crate::messages::{GenericPayload, parse};
 use crate::pieces::Pieces;
 use crate::queue::{PieceBlock, Queue};
@@ -16,7 +17,7 @@ use crate::utils::torrents::Torrent;
 
 pub struct PieceChannelPayload {
     pub offset: u64,
-    pub block: Vec<u8>
+    pub block: Vec<u8>,
 }
 
 pub struct MessageHandler<'a> {
