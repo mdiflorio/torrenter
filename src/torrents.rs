@@ -16,7 +16,7 @@ struct Node(String, i64);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DlFile {
-    path: Vec<String>,
+    pub(crate) path: Vec<String>,
     pub length: u64,
     #[serde(default)]
     md5sum: Option<String>,

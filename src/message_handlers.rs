@@ -8,8 +8,8 @@ use anyhow::{anyhow, Result};
 use bytebuffer::ByteBuffer;
 use tokio::sync::mpsc::Sender;
 
-use crate::messages;
 use crate::download::PiecesManager;
+use crate::messages;
 use crate::messages::{GenericPayload, parse};
 use crate::pieces::Pieces;
 use crate::queue::{PieceBlock, Queue};
@@ -161,7 +161,6 @@ impl MessageHandler<'_> {
     /// - Write to file
     /// - Request new pieces if not finished
     async fn piece(&mut self, payload: GenericPayload) {
-        println!("PIECE");
 
         let piece_block = PieceBlock {
             index: payload.index as u64,
@@ -197,7 +196,7 @@ impl MessageHandler<'_> {
 
         // Shutdown if finished
         if download_finished {
-            println!("File downloaded!");
+            println!("Torrent downloaded!");
             self.stream.shutdown(Shutdown::Both).expect("Unable to shutdown stream");
 
             // Otherwise, request new pieces
@@ -223,7 +222,6 @@ impl MessageHandler<'_> {
 
             // Grab the first piece in the queue
             let piece_block = self.queue.deque().unwrap();
-            println!("Requesting: {}", piece_block.index);
 
             // Check if that piece is still needed and request if so
             if pieces.needed(piece_block) {

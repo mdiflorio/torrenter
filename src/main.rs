@@ -31,7 +31,7 @@ const PORT: i16 = 6682;
 #[tokio::main]
 async fn main() {
     let peer_id = gen_peer_id();
-    download_torrent(peer_id, "Flux.torrent").await;
+    download_torrent(peer_id, "test-tor.torrent").await;
 }
 
 
