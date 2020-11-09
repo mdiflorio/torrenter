@@ -19,7 +19,7 @@ pub struct DlFile {
     pub(crate) path: Vec<String>,
     pub length: u64,
     #[serde(default)]
-    md5sum: Option<String>,
+    pub(crate) md5sum: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
