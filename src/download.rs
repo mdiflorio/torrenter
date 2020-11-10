@@ -64,33 +64,45 @@ pub async fn download_torrent(peer_id: ByteBuffer, file_path: &str) -> anyhow::R
 
 fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
 
-    // Loop through all files in the torrent
     let mut file_offset = 0;
-    let mut offset = payload.offset;
+    let mut write_pos = payload.offset;
     let mut bytes_to_write = payload.block.clone();
 
 
     for file in files {
-        let for_this_file = offset < file.length + file_offset;
+        let file_end = file.length + file_offset;
 
-        let write_len = if file.length + file_offset - offset < bytes_to_write.len() as u64 {
-            file.length + file_offset - offset
-        } else {
-            bytes_to_write.len() as u64
-        } as usize;
-
+        // If we need to write to this file
+        let for_this_file = write_pos < file_end;
 
         if for_this_file {
+
+
+            // We write either the full amount of bytes in the block
+            // or until the end of the file
+            let write_len = if file_end - write_pos < bytes_to_write.len() as u64 {
+                file_end - write_pos
+            } else {
+                bytes_to_write.len() as u64
+            } as usize;
+
+            // Calculate where we need to write for this file
+            let file_write_pos = write_pos - file_offset;
+
             let mut dl_file = OpenOptions::new().write(true).create(true).open(&file.path.join("/")).expect("Unable to open file");
-            dl_file.seek(SeekFrom::Start(offset - file_offset)).expect("Unable to set offset on file");
+            dl_file.seek(SeekFrom::Start(file_write_pos)).expect("Unable to set offset on file");
             dl_file.write(&bytes_to_write[0..write_len]).expect("Unable to write to file");
+
+            // Remove the bytes from the start of the slice
             bytes_to_write.drain(0..write_len);
 
-
-            offset += write_len as u64;
-            file_offset += file.length;
+            // Calculate the write position for the next file
+            write_pos += write_len as u64;
         }
 
+        file_offset += file.length;
+
+        // Stop if we have nothing left to write
         if bytes_to_write.len() == 0 {
             break;
         }
@@ -99,7 +111,7 @@ fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
 
 
 #[test]
-fn test_write_block_to_file() {
+fn test_write_block_to_file_1() {
     match fs::remove_dir_all("test-files/") {
         Ok(_) => {},
         Err(_) => {}
@@ -162,10 +174,67 @@ fn test_write_block_to_file() {
     f.read(&mut buffer).expect("Couldn't read to buffer");
     println!("{:?}", buffer);
     assert_eq!(vec![1, 1, 0, 0, 0], buffer);
-
-    fs::remove_dir_all("test-files/").expect("Couldn't clean up folder");
 }
 
+
+#[test]
+fn test_write_block_to_file_2() {
+    match fs::remove_dir_all("test-files/") {
+        Ok(_) => {},
+        Err(_) => {}
+    };
+
+    match fs::create_dir("test-files/") {
+        Ok(_) => {},
+        Err(_) => {}
+    };
+
+    // Setup
+    let f1 = DlFile {
+        path: vec!["test-files".to_owned(), "file4.txt".to_owned()],
+        length: 5,
+        md5sum: None,
+    };
+
+    let f2 = DlFile {
+        path: vec!["test-files".to_owned(), "file5.txt".to_owned()],
+        length: 5,
+        md5sum: None,
+    };
+
+    let f3 = DlFile {
+        path: vec!["test-files".to_owned(), "file6.txt".to_owned()],
+        length: 5,
+        md5sum: None,
+    };
+
+    let mut files: Vec<DlFile> = Vec::new();
+    files.push(f1);
+    files.push(f2);
+    files.push(f3);
+
+    let payload = PieceChannelPayload {
+        offset: 9,
+        block: vec![1; 6],
+    };
+
+    // Logic
+    write_block_to_file(&files, payload);
+
+
+    let mut f = File::open("test-files/file5.txt").expect("Couldn't open file");
+    let mut buffer = [0; 5];
+    f.read(&mut buffer).expect("Couldn't read to buffer");
+    println!("{:?}", buffer);
+    assert_eq!(vec![0, 0, 0, 0, 1], buffer);
+
+
+    let mut f = File::open("test-files/file6.txt").expect("Couldn't open file");
+    let mut buffer = [0; 5];
+    f.read(&mut buffer).expect("Couldn't read to buffer");
+    println!("{:?}", buffer);
+    assert_eq!(vec![1; 5], buffer);
+}
 
 async fn download_from_peer(torrent: Arc<Torrent>, file_sender: Sender<PieceChannelPayload>, peer: Peer, handshake: Arc<Vec<u8>>, pieces: PiecesManager) -> anyhow::Result<()> {
     let peer_addr = (Ipv4Addr::from(peer.ip_addr), peer.port);
