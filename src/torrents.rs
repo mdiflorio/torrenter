@@ -199,3 +199,13 @@ pub fn hash_torrent_info(torrent_info: &Info) -> [u8; 20] {
     hashed_info.clone_from_slice(_hashed_info);
     return hashed_info;
 }
+
+
+#[test]
+fn test_hash_torrent_info() {
+    let torrent = Torrent::new("test-tor.torrent");
+    let hashed_info = hash_torrent_info(&torrent.info);
+
+    let expected: [u8; 20] = [0x06, 0xcb, 0x06, 0x12, 0x40, 0xb2, 0x4f, 0x73, 0x0f, 0xbe, 0xf7, 0xea, 0xd1, 0xb3, 0x48, 0xd8, 0x86, 0x52, 0x44, 0xaf];
+    assert_eq!(hashed_info, expected);
+}
