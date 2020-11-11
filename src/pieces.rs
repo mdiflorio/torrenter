@@ -1,10 +1,11 @@
 use crate::queue::PieceBlock;
-use crate::utils::torrents::{BLOCK_LEN, Torrent};
+use crate::utils::torrents::{BLOCK_LEN, calculate_torrent_size, Torrent};
 
 #[derive(Debug, Clone)]
 pub struct Pieces {
     requested: Vec<Vec<bool>>,
     received: Vec<Vec<bool>>,
+    percent_received: f32,
 }
 
 impl Pieces {
@@ -12,6 +13,7 @@ impl Pieces {
         Pieces {
             requested: build_pieces_vec(torrent),
             received: build_pieces_vec(torrent),
+            percent_received: 0.0,
         }
     }
 
@@ -26,6 +28,8 @@ impl Pieces {
     pub fn add_received(&mut self, piece_block: PieceBlock) {
         let block_index = piece_block.begin / BLOCK_LEN;
         self.received[piece_block.index as usize][block_index as usize] = true;
+        self.percent_received = calculate_downloaded_percent(&self.received);
+        println!("Downloaded: {}", self.percent_received);
     }
 
     /// Find out of a piece_block as been requested.
@@ -75,6 +79,42 @@ impl Pieces {
         }
         return received_every_piece;
     }
+}
+
+fn calculate_downloaded_percent(pieces: &Vec<Vec<bool>>) -> f32 {
+    let mut total_blocks: f32 = 0.0;
+    let mut downloaded: f32 = 0.0;
+
+    for piece in pieces {
+        for block in piece {
+            total_blocks += 1.0;
+
+            if *block {
+                downloaded += 1.0;
+            }
+        }
+    }
+
+    let percent = downloaded / total_blocks * 100.0;
+
+    return percent;
+}
+
+#[test]
+fn test_calculate_downloaded_percent() {
+    let pieces: Vec<Vec<bool>> = vec![vec![true, true]; 5];
+    let percent_downloaded = calculate_downloaded_percent(&pieces);
+    assert_eq!(percent_downloaded, 100.0);
+
+
+    let pieces: Vec<Vec<bool>> = vec![vec![true, false]; 5];
+    let percent_downloaded = calculate_downloaded_percent(&pieces);
+    assert_eq!(percent_downloaded, 50.0);
+
+
+    let pieces: Vec<Vec<bool>> = vec![vec![true, true, false]; 5];
+    let percent_downloaded = calculate_downloaded_percent(&pieces);
+    assert_eq!(percent_downloaded, 66.66667);
 }
 
 
