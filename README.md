@@ -19,7 +19,7 @@ or simply Rust code I'd love to hear from you.
 - [ ] Reorganise the code for a more OOP approach.
 - [ ] Add tests
 - [ ] Setup a listener for seeding to peers. 
-- [ ] Improve error handling and add reties for the tracker.
+- [ ] Improve error handling and add retries for the tracker.
 - [ ] Update tracker regularly and update list of peers.
 - [ ] Add NAT traversal to access peers behind NAT.
 - [ ] GUI for the terminal.
