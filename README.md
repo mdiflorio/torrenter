@@ -13,14 +13,14 @@ or simply Rust code I'd love to hear from you.
 ## Things that need to be done
 
 - [x] Get downloads working with multiple peers and concurrency.
+- [x] Add the ability to download multiple files in a torrent.
+- [ ] Check the hash of each piece before writing to the file.
 - [ ] Reorganise the code for a more OOP approach.
 - [ ] Add tests
-- [ ] Check the hash of each piece before writing to the file.
 - [ ] Setup a listener for seeding to peers. 
 - [ ] Improve error handling and add reties for the tracker.
 - [ ] Update tracker regularly and update list of peers.
 - [ ] Add NAT traversal to access peers behind NAT.
-- [ ] Add the ability to download multiple files in a torrent.
 - [ ] Add the ability to pause downloads and save download state.
 - [ ] GUI for the terminal.
 
