@@ -22,6 +22,10 @@ pub async fn download_torrent(peer_id: ByteBuffer, file_path: &str) -> anyhow::R
     let torrent = Arc::new(Torrent::new(file_path));
     torrent.print();
 
+
+    let download_folder = torrent.info.name.clone();
+    create_download_folder(&download_folder);
+
     let handshake = Arc::new(build_peer_handshake(&torrent.info_hash.unwrap(), &peer_id).to_bytes());
 
 
@@ -53,13 +57,20 @@ pub async fn download_torrent(peer_id: ByteBuffer, file_path: &str) -> anyhow::R
     }
 
     while let Some(payload) = rx.recv().await {
-        write_block_to_file(&torrent.info.files.as_ref().unwrap(), payload)
+        write_block_to_file(&download_folder, &torrent.info.files.as_ref().unwrap(), payload)
     }
 
     Ok(())
 }
 
-fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
+fn create_download_folder(name: &String) {
+    match fs::create_dir_all(name) {
+        Ok(_) => {}
+        Err(_) => {}
+    };
+}
+
+fn write_block_to_file(download_folder: &String, files: &Vec<DlFile>, payload: PieceChannelPayload) {
     let mut file_offset = 0;
     let mut write_pos = payload.offset;
     let mut bytes_to_write = payload.block.clone();
@@ -84,7 +95,9 @@ fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
             // Calculate the starting position to write the bytes
             let file_write_pos = write_pos - file_offset;
 
-            let mut dl_file = OpenOptions::new().write(true).create(true).open(&file.path.join("/")).expect("Unable to open file");
+            let file_path = download_folder.clone() + "/" + &file.path.clone().join("/");
+
+            let mut dl_file = OpenOptions::new().write(true).create(true).open(&file_path).expect("Unable to open file");
             dl_file.seek(SeekFrom::Start(file_write_pos)).expect("Unable to set offset on file");
             dl_file.write(&bytes_to_write[0..write_len]).expect("Unable to write to file");
 
@@ -107,31 +120,29 @@ fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
 
 #[test]
 fn test_write_block_to_file_1() {
-    match fs::remove_dir_all("test-files/") {
+    let download_folder: String = String::from("test-files/test1/");
+    match fs::remove_dir_all(&download_folder) {
         Ok(_) => {}
         Err(_) => {}
     };
 
-    match fs::create_dir("test-files/") {
-        Ok(_) => {}
-        Err(_) => {}
-    };
+    create_download_folder(&download_folder);
 
     // Setup
     let f1 = DlFile {
-        path: vec!["test-files".to_owned(), "file1.txt".to_owned()],
+        path: vec!["file1.txt".to_owned()],
         length: 5,
         md5sum: None,
     };
 
     let f2 = DlFile {
-        path: vec!["test-files".to_owned(), "file2.txt".to_owned()],
+        path: vec!["file2.txt".to_owned()],
         length: 5,
         md5sum: None,
     };
 
     let f3 = DlFile {
-        path: vec!["test-files".to_owned(), "file3.txt".to_owned()],
+        path: vec!["file3.txt".to_owned()],
         length: 5,
         md5sum: None,
     };
@@ -147,31 +158,28 @@ fn test_write_block_to_file_1() {
     };
 
     // Logic
-    write_block_to_file(&files, payload);
+    write_block_to_file(&download_folder, &files, payload);
 
     // Test
-    let mut f = File::open("test-files/file1.txt").expect("Couldn't open file");
+    let mut f = File::open(download_folder.clone() + "/file1.txt").expect("Couldn't open file");
     let mut buffer = [0; 5];
     f.read(&mut buffer).expect("Couldn't read to buffer");
-    println!("{:?}", buffer);
     assert_eq!(vec![0, 0, 0, 0, 1], buffer);
 
 
-    let mut f = File::open("test-files/file2.txt").expect("Couldn't open file");
+    let mut f = File::open(download_folder.clone() + "/file2.txt").expect("Couldn't open file");
     let mut buffer = [0; 5];
     f.read(&mut buffer).expect("Couldn't read to buffer");
-    println!("{:?}", buffer);
     assert_eq!(vec![1; 5], buffer);
 
 
-    let mut f = File::open("test-files/file3.txt").expect("Couldn't open file");
+    let mut f = File::open(download_folder.clone() + "/file3.txt").expect("Couldn't open file");
     let mut buffer = [0; 5];
     f.read(&mut buffer).expect("Couldn't read to buffer");
-    println!("{:?}", buffer);
     assert_eq!(vec![1, 1, 0, 0, 0], buffer);
 
 
-    match fs::remove_dir_all("test-files/") {
+    match fs::remove_dir_all(&download_folder) {
         Ok(_) => {}
         Err(_) => {}
     };
@@ -180,31 +188,28 @@ fn test_write_block_to_file_1() {
 
 #[test]
 fn test_write_block_to_file_2() {
-    match fs::remove_dir_all("test-files/") {
+    let download_folder: String = String::from("test-files/test2/");
+    match fs::remove_dir_all(&download_folder) {
         Ok(_) => {}
         Err(_) => {}
     };
-
-    match fs::create_dir("test-files/") {
-        Ok(_) => {}
-        Err(_) => {}
-    };
+    create_download_folder(&download_folder);
 
     // Setup
     let f1 = DlFile {
-        path: vec!["test-files".to_owned(), "file4.txt".to_owned()],
+        path: vec!["file1.txt".to_owned()],
         length: 5,
         md5sum: None,
     };
 
     let f2 = DlFile {
-        path: vec!["test-files".to_owned(), "file5.txt".to_owned()],
+        path: vec!["file2.txt".to_owned()],
         length: 5,
         md5sum: None,
     };
 
     let f3 = DlFile {
-        path: vec!["test-files".to_owned(), "file6.txt".to_owned()],
+        path: vec!["file3.txt".to_owned()],
         length: 5,
         md5sum: None,
     };
@@ -220,23 +225,23 @@ fn test_write_block_to_file_2() {
     };
 
     // Logic
-    write_block_to_file(&files, payload);
+    write_block_to_file(&download_folder, &files, payload);
 
 
-    let mut f = File::open("test-files/file5.txt").expect("Couldn't open file");
+    let mut f = File::open(download_folder.clone() + "/file2.txt").expect("Couldn't open file");
     let mut buffer = [0; 5];
     f.read(&mut buffer).expect("Couldn't read to buffer");
     println!("{:?}", buffer);
     assert_eq!(vec![0, 0, 0, 0, 1], buffer);
 
 
-    let mut f = File::open("test-files/file6.txt").expect("Couldn't open file");
+    let mut f = File::open(download_folder.clone() + "/file3.txt").expect("Couldn't open file");
     let mut buffer = [0; 5];
     f.read(&mut buffer).expect("Couldn't read to buffer");
     println!("{:?}", buffer);
     assert_eq!(vec![1; 5], buffer);
 
-    match fs::remove_dir_all("test-files/") {
+    match fs::remove_dir_all(&download_folder) {
         Ok(_) => {}
         Err(_) => {}
     };
