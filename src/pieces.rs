@@ -63,21 +63,7 @@ impl Pieces {
 
     /// Check if every piece and block has been received
     pub fn is_done(&self) -> bool {
-        let mut received_every_piece = true;
-
-        for piece in &self.received {
-            for block in piece {
-                if !block {
-                    received_every_piece = false;
-                    break;
-                }
-            }
-
-            if !received_every_piece {
-                break;
-            }
-        }
-        return received_every_piece;
+        return self.percent_received == 100.0;
     }
 }
 
