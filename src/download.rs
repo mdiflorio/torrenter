@@ -173,6 +173,12 @@ fn test_write_block_to_file_1() {
     f.read(&mut buffer).expect("Couldn't read to buffer");
     println!("{:?}", buffer);
     assert_eq!(vec![1, 1, 0, 0, 0], buffer);
+
+
+    match fs::remove_dir_all("test-files/") {
+        Ok(_) => {},
+        Err(_) => {}
+    };
 }
 
 
@@ -233,6 +239,11 @@ fn test_write_block_to_file_2() {
     f.read(&mut buffer).expect("Couldn't read to buffer");
     println!("{:?}", buffer);
     assert_eq!(vec![1; 5], buffer);
+
+    match fs::remove_dir_all("test-files/") {
+        Ok(_) => {},
+        Err(_) => {}
+    };
 }
 
 async fn download_from_peer(torrent: Arc<Torrent>, file_sender: Sender<PieceChannelPayload>, peer: Peer, handshake: Arc<Vec<u8>>, pieces: PiecesManager) -> anyhow::Result<()> {
