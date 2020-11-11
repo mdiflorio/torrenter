@@ -182,6 +182,20 @@ fn test_get_piece_len() {
 
 
 #[test]
+fn test_get_block_len() {
+    let torrent = Torrent::new("test-tor.torrent");
+
+    // Test length of all the other pieces
+    let piece_len = torrent.get_block_len(14, 0);
+    assert_eq!(piece_len, 16384);
+
+    // Test length of last block for the last piece
+    let piece_len = torrent.get_block_len(14, 1);
+    assert_eq!(piece_len, 4366);
+}
+
+
+#[test]
 fn test_blocks_per_piece() {
 
     // Test that the last piece has two blocks and isn't missing a block.
