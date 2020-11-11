@@ -121,9 +121,9 @@ pub fn build_peer_handshake(info_hash: &[u8; 20], peer_id: &ByteBuffer) -> ByteB
 // Each message has the following format:
 // <length prefix><message ID><payload>
 
-pub fn build_keep_alive() -> ByteBuffer {
-    // keep-alive: <len=0000>
 
+/// keep-alive: <len=0000>
+pub fn build_keep_alive() -> ByteBuffer {
     let mut buf: ByteBuffer = ByteBuffer::new();
 
     buf.write_u32(0);
@@ -132,9 +132,8 @@ pub fn build_keep_alive() -> ByteBuffer {
 }
 
 
+/// choke: <len=0001><id=0>
 pub fn build_choke() -> ByteBuffer {
-    // choke: <len=0001><id=0>
-
     let mut buf: ByteBuffer = ByteBuffer::new();
 
     buf.write_u32(1);
@@ -143,9 +142,9 @@ pub fn build_choke() -> ByteBuffer {
     return buf;
 }
 
-pub fn build_unchoke() -> ByteBuffer {
-    // unchoke: <len=0001><id=1>
 
+/// unchoke: <len=0001><id=1>
+pub fn build_unchoke() -> ByteBuffer {
     let mut buf: ByteBuffer = ByteBuffer::new();
 
     buf.write_u32(1);
@@ -155,8 +154,8 @@ pub fn build_unchoke() -> ByteBuffer {
 }
 
 
+/// interested: <len=0001><id=2>
 pub fn build_interested() -> ByteBuffer {
-    // interested: <len=0001><id=2>
 
     let mut buf: ByteBuffer = ByteBuffer::new();
 
@@ -167,8 +166,8 @@ pub fn build_interested() -> ByteBuffer {
 }
 
 
+/// not interested: <len=0001><id=3>
 pub fn build_not_interested() -> ByteBuffer {
-    // not interested: <len=0001><id=3>
 
     let mut buf: ByteBuffer = ByteBuffer::new();
 
@@ -179,8 +178,8 @@ pub fn build_not_interested() -> ByteBuffer {
 }
 
 
+/// have: <len=0005><id=4><piece index>
 pub fn build_have(piece_index: u32) -> ByteBuffer {
-    // have: <len=0005><id=4><piece index>
 
     let mut buf: ByteBuffer = ByteBuffer::new();
 
@@ -332,7 +331,6 @@ pub fn build_announce_req(
     announce_req.write_i32(rng.gen::<i32>());
     // 16      20-byte string  info_hash
     announce_req.write_bytes(&*torrent.info_hash.as_ref().unwrap());
-
     // 36      20-byte string  peer_id
     announce_req.write_bytes(&peer_id.to_bytes());
     // 56      64-bit integer  downloaded
