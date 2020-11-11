@@ -55,7 +55,6 @@ impl MessageHandler<'_> {
 
         let parsed_msg = parse(msg);
 
-
         match parsed_msg.id {
             0 => self.choke(),
             1 => self.unchoke(),
@@ -137,23 +136,15 @@ impl MessageHandler<'_> {
         println!("BITFIELD");
 
         let bf = payload.bitfield.as_ref().unwrap().to_bytes();
-        let queue_empty = self.queue.len() == 0;
 
-        // Iterate over all bytes and each bit in the bytes
-        for (i, b) in bf.iter().enumerate() {
-            let mut byte = b.clone();
+        let available_pieces = parse_bitfield(bf);
 
-
-            for j in 0..8 {
-                // Add the pieces to the job queue.
-                if byte % 2 > 0 {
-                    self.queue.queue((i * 8 + 7 - j) as u64)
-                }
-                byte = byte / 2;
-            }
+        // Add piece indexes to the download queue
+        for piece_index in available_pieces {
+            self.queue.queue(piece_index);
         }
-
     }
+
 
     /// Handle piece message
     ///
@@ -233,5 +224,45 @@ impl MessageHandler<'_> {
             }
         }
     }
+}
+
+/// Parse the bitfield.
+///
+///     For example: a bitfield of 255 is 1111 1111 in binary
+///     This means that the peer has the pieces 8 pieces
+///
+///     A bitfield of 1111 1110 means that the peer has 7 pieces, excluding the last piece.
+///     A bitfield of 0111 1111 means that the first piece is missing.
+fn parse_bitfield(bitfield: Vec<u8>) -> Vec<u64> {
+    let mut piece_indexes: Vec<u64> = Vec::new();
+
+    // Iterate over all bytes
+    for (i, b) in bitfield.iter().enumerate() {
+        let mut byte = b.clone();
+
+        // Iterate over each bit
+        for j in 0..8 {
+            // Add the pieces to the job queue.
+            if byte % 2 > 0 {
+                piece_indexes.push((i * 8 + 7 - j) as u64);
+            }
+            byte = byte / 2;
+        }
+    }
+
+    return piece_indexes;
+}
+
+
+#[test]
+fn test_parse_bitfield() {
+    let bitfield: Vec<u8> = vec![127];
+    let piece_indexes = parse_bitfield(bitfield);
+    assert_eq!(piece_indexes, vec![7, 6, 5, 4, 3, 2, 1]);
+
+
+    let bitfield: Vec<u8> = vec![255];
+    let piece_indexes = parse_bitfield(bitfield);
+    assert_eq!(piece_indexes, vec![7, 6, 5, 4, 3, 2, 1, 0]);
 }
 

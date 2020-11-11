@@ -77,7 +77,6 @@ fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
 
         if for_this_file {
 
-
             // We write either the full amount of bytes in the block
             // or until the end of the file
             let write_len = if file_end - write_pos < bytes_to_write.len() as u64 {

@@ -9,7 +9,7 @@ pub struct GenericPayload {
     pub(crate) index: u32,
     pub(crate) begin: u32,
     pub(crate) length: Option<u32>,
-    piece_index: Option<u32>,
+    pub(crate) piece_index: Option<u32>,
     pub(crate) block: Option<ByteBuffer>,
     pub(crate) bitfield: Option<ByteBuffer>,
 }
