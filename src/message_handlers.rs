@@ -1,7 +1,4 @@
-use std::collections::hash_map::OccupiedEntry;
-use std::fs::File;
 use std::io::prelude::*;
-use std::io::SeekFrom;
 use std::net::{Shutdown, TcpStream};
 
 use anyhow::{anyhow, Result};
@@ -11,7 +8,6 @@ use tokio::sync::mpsc::Sender;
 use crate::download::PiecesManager;
 use crate::messages;
 use crate::messages::{GenericPayload, parse};
-use crate::pieces::Pieces;
 use crate::queue::{PieceBlock, Queue};
 use crate::utils::torrents::Torrent;
 
@@ -62,7 +58,7 @@ impl MessageHandler<'_> {
             5 => self.bitfield(parsed_msg.payload),
             7 => {
                 self.piece(parsed_msg.payload).await;
-            },
+            }
             _ => {
                 println!("Unknown message ID: {:?}", parsed_msg.id);
             }
@@ -151,7 +147,6 @@ impl MessageHandler<'_> {
     /// - Write to file
     /// - Request new pieces if not finished
     async fn piece(&mut self, payload: GenericPayload) {
-
         let piece_block = PieceBlock {
             index: payload.index as u64,
             begin: payload.begin as u64,
@@ -167,7 +162,7 @@ impl MessageHandler<'_> {
             block: payload.block.unwrap().to_bytes(),
         };
 
-        let mut download_finished: bool;
+        let download_finished: bool;
 
         {
             let mut pieces = self.pieces.lock().unwrap();
@@ -180,7 +175,7 @@ impl MessageHandler<'_> {
         };
 
         {
-            let mut pieces = self.pieces.lock().unwrap();
+            let pieces = self.pieces.lock().unwrap();
             download_finished = pieces.is_done();
         }
 

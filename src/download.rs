@@ -1,10 +1,8 @@
 use std::fs::{File, OpenOptions};
 use std::fs;
-use std::intrinsics::write_bytes;
 use std::io::prelude::*;
 use std::io::SeekFrom;
 use std::net::{Ipv4Addr, TcpStream};
-use std::num::Wrapping;
 use std::sync::{Arc, Mutex};
 
 use bytebuffer::ByteBuffer;
@@ -14,9 +12,8 @@ use tokio::sync::mpsc::Sender;
 use crate::message_handlers::{MessageHandler, PieceChannelPayload};
 use crate::messages::build_peer_handshake;
 use crate::pieces::Pieces;
-use crate::queue::{PieceBlock, Queue};
-use crate::utils;
-use crate::utils::{Peer, torrents};
+use crate::queue::Queue;
+use crate::utils::Peer;
 use crate::utils::torrents::{DlFile, Torrent};
 
 pub type PiecesManager = Arc<Mutex<Pieces>>;
@@ -63,7 +60,6 @@ pub async fn download_torrent(peer_id: ByteBuffer, file_path: &str) -> anyhow::R
 }
 
 fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
-
     let mut file_offset = 0;
     let mut write_pos = payload.offset;
     let mut bytes_to_write = payload.block.clone();
@@ -112,12 +108,12 @@ fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
 #[test]
 fn test_write_block_to_file_1() {
     match fs::remove_dir_all("test-files/") {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(_) => {}
     };
 
     match fs::create_dir("test-files/") {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(_) => {}
     };
 
@@ -176,7 +172,7 @@ fn test_write_block_to_file_1() {
 
 
     match fs::remove_dir_all("test-files/") {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(_) => {}
     };
 }
@@ -185,12 +181,12 @@ fn test_write_block_to_file_1() {
 #[test]
 fn test_write_block_to_file_2() {
     match fs::remove_dir_all("test-files/") {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(_) => {}
     };
 
     match fs::create_dir("test-files/") {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(_) => {}
     };
 
@@ -241,7 +237,7 @@ fn test_write_block_to_file_2() {
     assert_eq!(vec![1; 5], buffer);
 
     match fs::remove_dir_all("test-files/") {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(_) => {}
     };
 }

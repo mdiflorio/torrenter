@@ -5,15 +5,6 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::sync::{Arc, Mutex};
-
-use anyhow;
-use bytebuffer::ByteBuffer;
-use tokio::sync::mpsc;
-
 use crate::download::download_torrent;
 use crate::utils::gen_peer_id;
 

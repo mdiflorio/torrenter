@@ -2,7 +2,6 @@ use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
 
-use anyhow;
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use serde_bencode::{de, ser};
@@ -66,7 +65,7 @@ pub struct Torrent {
     #[serde(rename = "created by")]
     created_by: Option<String>,
     pub(crate) size: Option<u64>,
-    pub(crate) info_hash: Option<[u8; 20]>
+    pub(crate) info_hash: Option<[u8; 20]>,
 }
 
 impl Torrent {
@@ -103,7 +102,7 @@ impl Torrent {
     pub fn get_blocks_per_piece(&self, piece_index: u64) -> u64 {
         let piece_len = self.get_piece_len(piece_index);
 
-        let mut blocks_per_piece: u64;
+        let blocks_per_piece: u64;
 
         // Round up if it's the last piece
         if piece_len % BLOCK_LEN > 0 {

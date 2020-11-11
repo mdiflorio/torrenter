@@ -2,12 +2,7 @@ use core::convert::TryInto;
 
 use anyhow;
 use bytebuffer::ByteBuffer;
-use crypto::digest::Digest;
-use crypto::sha1::Sha1;
 use rand::Rng;
-use serde_bencode::ser;
-
-use crate::utils::torrents::calculate_torrent_size;
 
 #[path = "./torrents.rs"]
 pub mod torrents;
