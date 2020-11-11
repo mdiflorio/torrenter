@@ -102,7 +102,17 @@ impl Torrent {
     /// Calculate the amount of blocks for each piece
     pub fn get_blocks_per_piece(&self, piece_index: u64) -> u64 {
         let piece_len = self.get_piece_len(piece_index);
-        return piece_len / BLOCK_LEN;
+
+        let mut blocks_per_piece: u64;
+
+        // Round up if it's the last piece
+        if piece_len % BLOCK_LEN > 0 {
+            blocks_per_piece = piece_len / BLOCK_LEN + 1;
+        } else {
+            blocks_per_piece = piece_len / BLOCK_LEN;
+        }
+
+        return blocks_per_piece;
     }
 
 
@@ -154,6 +164,35 @@ impl Torrent {
         println!("length:\t{:?}", self.info.length);
         println!("root_hash:\t{:?}", self.info.root_hash);
     }
+}
+
+
+#[test]
+fn test_get_piece_len() {
+    let torrent = Torrent::new("test-tor.torrent");
+
+    // Test length of last piece
+    let piece_len = torrent.get_piece_len(14);
+    assert_eq!(piece_len, 20750);
+
+    // Test length of all the other pieces
+    let piece_len = torrent.get_piece_len(1);
+    assert_eq!(piece_len, 32768);
+}
+
+
+#[test]
+fn test_blocks_per_piece() {
+
+    // Test that the last piece has two blocks and isn't missing a block.
+    let torrent = Torrent::new("test-tor.torrent");
+    let piece_len = torrent.get_blocks_per_piece(14);
+    assert_eq!(piece_len, 2);
+
+
+    let torrent = Torrent::new("test-tor.torrent");
+    let piece_len = torrent.get_blocks_per_piece(13);
+    assert_eq!(piece_len, 2);
 }
 
 
