@@ -162,23 +162,30 @@ impl Torrent {
 /// If many files add up the length of each of each file
 /// otherwise, take the length of a single file.
 pub fn calculate_torrent_size(torrent_info: &Info) -> u64 {
-    let mut left: u64 = 0;
+    let mut size: u64 = 0;
 
     if let &Some(ref files) = &torrent_info.files {
         for f in files {
-            left += f.length;
+            size += f.length;
         }
     } else {
-        left += &torrent_info.length.unwrap_or_else(|| 0);
+        size += &torrent_info.length.unwrap_or_else(|| 0);
     }
+    return size;
+}
 
-    return left;
+#[test]
+fn test_calculate_torrent_size() {
+    let torrent = Torrent::new("test-tor.torrent");
+    let torrent_size = calculate_torrent_size(&torrent.info);
+    assert_eq!(torrent_size, 479502);
 }
 
 
 /// Create a hash of the torrent info.
 ///
-/// This is used to create the announce that is sent to the tracker.
+///     This is used to create the announce that is sent to the tracker
+///     and to the peers.
 pub fn hash_torrent_info(torrent_info: &Info) -> [u8; 20] {
     let _hashed_info: &mut [u8] = &mut [0; 20];
 

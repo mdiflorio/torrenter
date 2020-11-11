@@ -136,7 +136,6 @@ impl MessageHandler<'_> {
         println!("BITFIELD");
 
         let bf = payload.bitfield.as_ref().unwrap().to_bytes();
-
         let available_pieces = parse_bitfield(bf);
 
         // Add piece indexes to the download queue
