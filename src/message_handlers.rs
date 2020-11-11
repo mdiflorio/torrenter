@@ -153,7 +153,6 @@ impl MessageHandler<'_> {
             length: None,
         };
 
-
         // Calculate the index offset on where we have to write the received piece.
         let offset = payload.index as u64 * self.torrent.info.piece_length + payload.begin as u64;
 

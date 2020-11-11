@@ -68,12 +68,12 @@ fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
     for file in files {
         let file_end = file.length + file_offset;
 
-        // If we need to write to this file
+        // Check if the block is for this file
         let for_this_file = write_pos < file_end;
 
         if for_this_file {
 
-            // We write either the full amount of bytes in the block
+            // Write either the full amount of bytes in the block
             // or until the end of the file
             let write_len = if file_end - write_pos < bytes_to_write.len() as u64 {
                 file_end - write_pos
@@ -81,7 +81,7 @@ fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
                 bytes_to_write.len() as u64
             } as usize;
 
-            // Calculate where we need to write for this file
+            // Calculate the starting position to write the bytes
             let file_write_pos = write_pos - file_offset;
 
             let mut dl_file = OpenOptions::new().write(true).create(true).open(&file.path.join("/")).expect("Unable to open file");
@@ -97,7 +97,7 @@ fn write_block_to_file(files: &Vec<DlFile>, payload: PieceChannelPayload) {
 
         file_offset += file.length;
 
-        // Stop if we have nothing left to write
+        // Stop if there is nothing left to write
         if bytes_to_write.len() == 0 {
             break;
         }
