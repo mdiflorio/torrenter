@@ -81,6 +81,7 @@ impl Pieces {
     }
 }
 
+/// Calculate the percentage of blocks that have been received.
 fn calculate_downloaded_percent(pieces: &Vec<Vec<bool>>) -> f32 {
     let mut total_blocks: f32 = 0.0;
     let mut downloaded: f32 = 0.0;
